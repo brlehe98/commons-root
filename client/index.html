@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Root serves this page and sets its HTTP headers; these CSP directives are the ones a page can set itself
+         without risking Root's own scripts (see security/plans/SECURITY_HEADERS_PLAN.md for the full policy). -->
+    <meta http-equiv="Content-Security-Policy" content="object-src 'none'; base-uri 'self'; form-action 'none'" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <meta name="theme-color" content="#000000" />
+    <meta name="description" content="Commons" />
+    <title>Commons</title>
+  </head>
+
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/index.tsx"></script>
+  </body>
+</html>

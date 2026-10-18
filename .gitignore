@@ -1,0 +1,13 @@
+node_modules/
+dist/
+networking/gen/
+.env
+*.sqlite
+*.db
+*.tsbuildinfo
+.package/
+*.pkg
+
+# Local data: the dev database and uploads in progress hold user content.
+*.sqlite3
+server/.tempUploads/

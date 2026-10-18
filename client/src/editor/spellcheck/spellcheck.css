@@ -1,0 +1,11 @@
+/* Spelling and grammar underlines (spellcheck/plugin.ts). */
+.spell-error { text-decoration: underline wavy #dc2626; text-decoration-skip-ink: none; text-underline-offset: 3px; cursor: pointer; }
+.spell-popup { position: fixed; z-index: 50; max-width: 300px; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; box-shadow: 0 8px 24px rgb(0 0 0 / 0.2); font-size: 13px; font-family: system-ui, sans-serif; }
+.spell-popup p { margin: 0 0 6px; color: var(--muted); }
+.spell-suggestions { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
+.spell-suggestions button { font-weight: 600; padding: 2px 8px; border-radius: 999px; }
+.spell-ignore { font-size: 12px; background: none; border: none; color: var(--muted); padding: 0; cursor: pointer; text-decoration: underline; }
+
+/* "Ignore" and "Add to dictionary" side by side, clearly apart. */
+.spell-popup > .spell-ignore { margin-right: 18px; }
+.spell-popup > .spell-ignore:last-child { margin-right: 0; }

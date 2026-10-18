@@ -1,0 +1,55 @@
+diff --git a/node_modules/y-prosemirror/src/plugins/sync-plugin.js b/node_modules/y-prosemirror/src/plugins/sync-plugin.js
+index dccfb76..e9c40f6 100644
+--- a/node_modules/y-prosemirror/src/plugins/sync-plugin.js
++++ b/node_modules/y-prosemirror/src/plugins/sync-plugin.js
+@@ -798,7 +798,9 @@ export const createNodeFromYElement = (
+           : { type: 'added' }
+       }
+     }
+-    const node = schema.node(el.nodeName, attrs, children)
++    const nodeMarks = (attrs.__marks || []).map(m => schema.markFromJSON(m))
++    delete attrs.__marks
++    const node = schema.node(el.nodeName, attrs, children, nodeMarks)
+     meta.mapping.set(el, node)
+     return node
+   } catch (e) {
+@@ -879,6 +881,7 @@ const createTypeFromElementNode = (node, meta) => {
+       type.setAttribute(key, val)
+     }
+   }
++  if (node.marks.length) type.setAttribute('__marks', node.marks.map(m => m.toJSON()))
+   type.insert(
+     0,
+     normalizePNodeContent(node).map((n) =>
+@@ -903,6 +906,9 @@ const createTypeFromTextOrElementNode = (node, meta) =>
+ /**
+  * @param {any} val
+  */
++const pAttrsWithMarks = (pnode) =>
++  pnode.marks && pnode.marks.length ? Object.assign({}, pnode.attrs, { __marks: pnode.marks.map(m => m.toJSON()) }) : pnode.attrs
++
+ const isObject = (val) => typeof val === 'object' && val !== null
+ 
+ /**
+@@ -980,7 +986,7 @@ const equalYTypePNode = (ytype, pnode) => {
+   ) {
+     const normalizedContent = normalizePNodeContent(pnode)
+     return ytype._length === normalizedContent.length &&
+-      equalAttrs(ytype.getAttributes(), pnode.attrs) &&
++      equalAttrs(ytype.getAttributes(), pAttrsWithMarks(pnode)) &&
+       ytype.toArray().every((ychild, i) =>
+         equalYTypePNode(ychild, normalizedContent[i])
+       )
+@@ -1153,10 +1159,10 @@ export const updateYFragment = (y, yDomFragment, pNode, meta) => {
+   // update attributes
+   if (yDomFragment instanceof Y.XmlElement) {
+     const yDomAttrs = yDomFragment.getAttributes()
+-    const pAttrs = pNode.attrs
++    const pAttrs = pAttrsWithMarks(pNode)
+     for (const key in pAttrs) {
+       if (pAttrs[key] !== null) {
+-        if (yDomAttrs[key] !== pAttrs[key] && key !== 'ychange') {
++        if (yDomAttrs[key] !== pAttrs[key] && key !== 'ychange' && !(key === '__marks' && JSON.stringify(yDomAttrs[key]) === JSON.stringify(pAttrs[key]))) {
+           yDomFragment.setAttribute(key, pAttrs[key])
+         }
+       } else {

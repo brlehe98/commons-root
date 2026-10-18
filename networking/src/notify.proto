@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+import "rootsdk/types.proto";
+import "common.proto";
+
+// Kinds of events a member can be notified about. Each member turns kinds
+// on or off in the app; Root cannot mute a single app.
+enum NotifyKind {
+  NOTIFY_KIND_MENTION = 0;
+  NOTIFY_KIND_COMMENT = 1;
+  NOTIFY_KIND_SUGGESTION_ADDED = 2;
+  NOTIFY_KIND_SUGGESTION_RESOLVED = 3;
+  // A page or category the member follows got a new published version.
+  NOTIFY_KIND_PAGE_UPDATED = 4;
+  // Editors: a reader reported an error or suggested an addition.
+  NOTIFY_KIND_REPORT = 5;
+}
+
+// Something that happened in a text, reported by the editor, which is the
+// only place that sees comments and suggestions.
+message ReportActivityRequest {
+  string docId = 1;
+  NotifyKind kind = 2;
+  // MENTION: the people mentioned. COMMENT: the other people in the thread.
+  // SUGGESTION_RESOLVED: the suggestion's author.
+  repeated string userIds = 3;
+  // SUGGESTION_RESOLVED: true when accepted.
+  bool accepted = 4;
+}
+
+message NotifyPref {
+  NotifyKind kind = 1;
+  bool enabled = 2;
+}
+message GetPrefsResponse {
+  repeated NotifyPref prefs = 1;
+}
+message SetPrefsRequest {
+  repeated NotifyPref prefs = 1;
+}
+
+message MentionableRequest {
+  string docId = 1;
+}
+
+service NotifyService {
+  rpc ReportActivity(ReportActivityRequest) returns (rootsdk.Void);
+  rpc GetPrefs(rootsdk.Void) returns (GetPrefsResponse);
+  rpc SetPrefs(SetPrefsRequest) returns (Ack);
+  // Everyone who can open the text, for @mentions.
+  rpc ListMentionable(MentionableRequest) returns (ListMembersResponse);
+}

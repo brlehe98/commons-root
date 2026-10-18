@@ -1,0 +1,80 @@
+/* Fields, statuses and approvals (client/src/fields). */
+.card-fields { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.field-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; line-height: 1; padding: 3px 7px; border-radius: 999px; border: 1px solid var(--field-color); color: var(--field-color); background: color-mix(in srgb, var(--field-color) 10%, transparent); }
+button.field-badge { cursor: pointer; font: inherit; font-size: 12px; }
+button.field-badge:disabled { cursor: default; }
+.field-badge.active { background: var(--field-color); color: #fff; }
+.project-fields { display: flex; flex-direction: column; gap: 8px; padding: 10px 0; border-bottom: 1px solid var(--border); margin-bottom: 8px; }
+.project-field { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 14px; }
+.project-field-name { display: inline-flex; align-items: center; gap: 6px; min-width: 160px; color: var(--muted); }
+.field-options { display: inline-flex; flex-wrap: wrap; gap: 6px; }
+.field-text { min-width: 240px; }
+.field-error { color: #b91c1c; font-size: 13px; margin: 0; }
+.approval-wait { margin: 0; }
+
+.fields-admin { display: flex; gap: 16px; align-items: flex-start; }
+.fields-admin-list { width: 240px; display: flex; flex-direction: column; gap: 4px; }
+.fields-admin-list button.ws-row { display: flex; align-items: center; gap: 8px; text-align: left; }
+.fields-admin-list .active { outline: 2px solid var(--accent, #3b82f6); }
+.field-form { flex: 1; display: flex; flex-direction: column; gap: 12px; max-width: 640px; }
+.field-form label.row { display: flex; align-items: center; gap: 8px; }
+.field-form fieldset { border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; display: flex; flex-wrap: wrap; gap: 8px 16px; }
+.field-form .option-row { display: flex; align-items: center; gap: 8px; }
+.field-form .option-row input[type="text"] { flex: 1; }
+.icon-picker { position: relative; }
+.icon-picker-button { width: 34px; height: 30px; display: inline-flex; align-items: center; justify-content: center; }
+.icon-picker-pop { position: absolute; z-index: 30; top: 34px; left: 0; width: 300px; background: var(--panel, #fff); border: 1px solid var(--border); border-radius: 8px; padding: 8px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15); }
+.icon-picker-pop input { width: 100%; box-sizing: border-box; margin-bottom: 6px; }
+.icon-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 2px; max-height: 220px; overflow-y: auto; }
+.icon-grid button { height: 32px; border: none; background: none; cursor: pointer; border-radius: 4px; }
+.icon-grid button:hover, .icon-grid button.active { background: var(--bg); }
+.color-picker { display: inline-flex; align-items: center; gap: 4px; }
+.swatch { width: 20px; height: 20px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; padding: 0; }
+.swatch.active { border-color: var(--text, #111); }
+.color-picker input[type="color"] { width: 26px; height: 24px; padding: 0; border: none; background: none; }
+
+/* Small dialogs (notification preferences). */
+.modal-backdrop { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.35); display: flex; align-items: center; justify-content: center; z-index: 50; }
+.modal { background: var(--bg); color: var(--text); border-radius: 10px; padding: 20px 24px; max-width: 520px; width: calc(100% - 32px); max-height: 80vh; overflow-y: auto; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25); }
+.modal h2 { margin-top: 0; font-size: 17px; }
+.mention-box { position: relative; display: block; }
+.mention-box textarea { width: 100%; box-sizing: border-box; }
+.mention-list { position: absolute; z-index: 30; left: 0; right: 0; top: 100%; list-style: none; margin: 2px 0 0; padding: 4px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15); }
+.mention-list li { padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 14px; }
+.mention-list li.on, .mention-list li:hover { background: var(--panel); }
+.mention { color: var(--accent, #2563eb); }
+.readability { white-space: nowrap; }
+.tiptap figure.figure-broken img { min-height: 60px; }
+.tiptap figure.figure-broken::before { content: attr(data-error); display: block; font-size: 13px; color: var(--muted); padding: 6px 0; }
+
+/* Conditions on a field's approval or filler (Conditions.tsx). */
+.conditions { display: flex; flex-direction: column; gap: 6px; width: 100%; margin-top: 6px; }
+.condition-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0; }
+.condition-row select { max-width: 100%; min-width: 0; }
+.condition-word { font-size: 13px; color: var(--muted); }
+.condition-options { display: flex; flex-wrap: wrap; gap: 4px; min-width: 0; }
+.condition-options .chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border: 1px solid var(--border); border-radius: 999px; font-size: 13px; overflow-wrap: anywhere; }
+
+/* Keep the field form inside its Settings card at any width. A fieldset is
+   as wide as its content by default (min-width: min-content), which made
+   long rows push past the card. */
+.fields-admin { min-width: 0; }
+.fields-admin-list { flex-shrink: 0; min-width: 0; max-width: 40%; }
+.fields-admin-list button.ws-row { min-width: 0; overflow: hidden; }
+.field-form { min-width: 0; flex: 1 1 0; }
+.field-form fieldset { min-width: 0; max-width: 100%; box-sizing: border-box; }
+.field-form label.row { flex-wrap: wrap; min-width: 0; }
+.field-form label.row input:not([type="checkbox"]) { flex: 1 1 10em; min-width: 0; }
+.field-form .option-row { flex-wrap: wrap; width: 100%; min-width: 0; }
+.field-form .option-row input[type="text"] { min-width: 8em; }
+.field-form select { max-width: 100%; min-width: 0; }
+.field-form .color-picker { flex-wrap: wrap; }
+
+/* Settings > Deadline reminders */
+.deadline-settings fieldset { border: none; padding: 0; margin: 12px 0 0; min-width: 0; }
+.deadline-settings legend { font-weight: 600; font-size: 13px; margin-bottom: 6px; padding: 0; }
+.deadline-settings .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.deadline-settings .chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border: 1px solid var(--border); border-radius: 999px; font-size: 13px; cursor: pointer; }
+.deadline-settings .chip:has(input:checked) { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.deadline-settings > .row { display: flex; align-items: center; gap: 6px; margin-top: 12px; }
+.deadline-settings .section-actions { margin-top: auto; padding-top: 14px; }

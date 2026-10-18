@@ -1,0 +1,538 @@
+syntax = "proto3";
+
+import "rootsdk/types.proto";
+import "common.proto";
+
+// ---------- Spaces ----------
+
+// A space holds pages and categories. The main space is read by the whole
+// community; other spaces are groups, made from a Root role, and visible to
+// everyone else or hidden.
+message Space {
+  string id = 1;
+  string name = 2;
+  int32 position = 3;
+  // The caller's level in the space.
+  AccessLevel level = 4;
+  // Lucide icon name, or "asset:<root uri>"; empty for the default.
+  string icon = 5;
+  // CSS color; empty for the default.
+  string color = 6;
+  bool main = 7;
+  // A group: the Root role it was made from. Empty for the main space.
+  string roleId = 8;
+  // Members outside the space can read its published pages.
+  bool everyoneReads = 9;
+}
+
+message RoleAccess {
+  string roleId = 1;
+  string roleName = 2;
+  string roleColor = 3;
+  AccessLevel level = 4;
+  // Named app admin in the Root app settings: always Admin, not editable here.
+  bool appAdmin = 5;
+}
+
+message GetMeResponse {
+  string userId = 1;
+  bool isAdmin = 2;
+  // True while no app admin is set in the app settings: everyone is admin.
+  bool adminsUnset = 3;
+  // Open reports in spaces the caller edits.
+  int32 openReports = 4;
+}
+
+message ListSpacesResponse {
+  repeated Space spaces = 1;
+}
+
+message SaveSpaceRequest {
+  // Empty to create a group.
+  string id = 1;
+  string name = 2;
+  // Creating a group: the role whose members write in it.
+  string roleId = 3;
+  bool everyoneReads = 4;
+}
+message SaveSpaceResponse {
+  Space space = 1;
+}
+
+message IdRequest {
+  string id = 1;
+}
+
+message ReorderRequest {
+  repeated string ids = 1;
+}
+
+message SetStyleRequest {
+  string id = 1;
+  string icon = 2;
+  string color = 3;
+}
+
+message GetAccessRequest {
+  string spaceId = 1;
+}
+message GetAccessResponse {
+  repeated RoleAccess roles = 1;
+}
+message SetAccessRequest {
+  string spaceId = 1;
+  repeated RoleAccess roles = 2;
+}
+
+message Role {
+  string id = 1;
+  string name = 2;
+  string color = 3;
+}
+message ListRolesResponse {
+  repeated Role roles = 1;
+}
+
+// ---------- Categories ----------
+
+message Category {
+  string id = 1;
+  string spaceId = 2;
+  // Empty at the top of the tree.
+  string parentId = 3;
+  string name = 4;
+  int32 position = 5;
+  // Published pages directly in it.
+  int32 pageCount = 6;
+}
+
+message ListCategoriesRequest {
+  string spaceId = 1;
+}
+message ListCategoriesResponse {
+  repeated Category categories = 1;
+}
+
+message SaveCategoryRequest {
+  // Empty to create.
+  string id = 1;
+  string spaceId = 2;
+  string parentId = 3;
+  string name = 4;
+}
+message SaveCategoryResponse {
+  Category category = 1;
+}
+
+// Places a category under a parent, before a sibling (empty: at the end).
+message MoveCategoryRequest {
+  string id = 1;
+  string parentId = 2;
+  string beforeId = 3;
+}
+
+// ---------- Page types ----------
+
+enum FieldKind {
+  FIELD_TEXT = 0;
+  FIELD_LINK = 1;
+  FIELD_NUMBER = 2;
+  FIELD_DATE = 3;
+  FIELD_CHOICE = 4;
+  FIELD_IMAGE = 5;
+}
+
+message FieldDef {
+  string id = 1;
+  string name = 2;
+  FieldKind kind = 3;
+  // FIELD_CHOICE: the choices.
+  repeated string options = 4;
+}
+
+// A kind of page (Guide, Tool…): its fields, shown in the infobox, and a
+// template every new page of the type starts from.
+message PageType {
+  string id = 1;
+  string name = 2;
+  string icon = 3;
+  repeated FieldDef fields = 4;
+  int32 position = 5;
+}
+
+message ListPageTypesResponse {
+  repeated PageType types = 1;
+}
+message SavePageTypeResponse {
+  PageType type = 1;
+}
+
+// ---------- Pages ----------
+
+// How the community outside the space's editors takes part in a page.
+enum Community {
+  // Only the space's editors write.
+  COMMUNITY_NONE = 0;
+  // Readers can suggest changes and comment.
+  COMMUNITY_SUGGEST = 1;
+  // Readers can edit the draft; an editor publishes.
+  COMMUNITY_EDIT = 2;
+}
+
+message FieldValue {
+  string fieldId = 1;
+  string value = 2;
+}
+
+message PageSummary {
+  string id = 1;
+  string spaceId = 2;
+  string title = 3;
+  string typeId = 4;
+  string categoryId = 5;
+  repeated string tags = 6;
+  // ms since epoch; 0 when never published.
+  int64 publishedAt = 7;
+  int64 updatedAt = 8;
+  // The first lines of the published text.
+  string lead = 9;
+  string lang = 10;
+  // The caller sees the draft only (never published).
+  bool draftOnly = 11;
+  // Search: the words around the match.
+  string snippet = 12;
+}
+
+message Translation {
+  string pageId = 1;
+  string lang = 2;
+  string title = 3;
+}
+
+message Page {
+  string id = 1;
+  string spaceId = 2;
+  string title = 3;
+  string typeId = 4;
+  string categoryId = 5;
+  repeated string tags = 6;
+  // Values being written (the draft).
+  repeated FieldValue fields = 7;
+  // Values of the published version.
+  repeated FieldValue publishedFields = 8;
+  string publishedTitle = 9;
+  Community community = 10;
+  string lang = 11;
+  repeated Translation translations = 12;
+  int64 publishedAt = 13;
+  string publishedBy = 14;
+  int64 createdAt = 15;
+  string createdBy = 16;
+  // The caller's level on the draft: READ, COMMENT (suggest) or EDIT.
+  AccessLevel level = 17;
+  // The caller can publish, change the page's settings, move or delete it.
+  bool canPublish = 18;
+  bool following = 19;
+  // The draft changed since the last publication.
+  bool draftChanged = 20;
+  // Published pages that link here.
+  repeated PageSummary backlinks = 21;
+  // Open reports on the page (editors only).
+  int32 openReports = 22;
+}
+
+message GetPageResponse {
+  Page page = 1;
+}
+
+message ListPagesRequest {
+  string spaceId = 1;
+  // Optional filters.
+  string categoryId = 2;
+  // With categoryId: also pages in its subcategories.
+  bool deep = 3;
+  string tag = 4;
+  string typeId = 5;
+  // Editors: pages never published, or with unpublished changes.
+  bool drafts = 6;
+  // Newest first by publication when true, else by title.
+  bool recent = 7;
+  int32 limit = 8;
+}
+message ListPagesResponse {
+  repeated PageSummary pages = 1;
+}
+
+message CreatePageRequest {
+  string spaceId = 1;
+  string title = 2;
+  string typeId = 3;
+  string categoryId = 4;
+  // A translation of this page, in `lang`.
+  string translationOf = 5;
+  string lang = 6;
+}
+message CreatePageResponse {
+  Page page = 1;
+}
+
+message UpdatePageRequest {
+  string id = 1;
+  string title = 2;
+  string typeId = 3;
+  string categoryId = 4;
+  repeated string tags = 5;
+  repeated FieldValue fields = 6;
+  string lang = 7;
+}
+
+message SetCommunityRequest {
+  string id = 1;
+  Community community = 2;
+}
+
+message MovePageRequest {
+  string id = 1;
+  string spaceId = 2;
+  // Category in the new space; empty for none.
+  string categoryId = 3;
+}
+
+message PublishRequest {
+  string id = 1;
+  // What changed, shown in the history.
+  string note = 2;
+}
+
+message Revision {
+  int64 id = 1;
+  int64 createdAt = 2;
+  string authorId = 3;
+  string note = 4;
+  string title = 5;
+}
+message ListRevisionsResponse {
+  repeated Revision revisions = 1;
+}
+
+// The published text as ProseMirror JSON, split like DocService.Open when large.
+message GetContentRequest {
+  string pageId = 1;
+  // 0: the current publication.
+  int64 revisionId = 2;
+  string transferId = 3;
+  int32 chunk = 4;
+}
+message GetContentResponse {
+  bytes json = 1;
+  int32 chunk = 2;
+  int32 totalChunks = 3;
+  string transferId = 4;
+  // The revision's title and fields.
+  string title = 5;
+  repeated FieldValue fields = 6;
+}
+
+message SearchRequest {
+  string query = 1;
+  string spaceId = 2;
+  string categoryId = 3;
+  string tag = 4;
+  string typeId = 5;
+}
+message SearchResponse {
+  repeated PageSummary pages = 1;
+}
+
+// Titles for the link picker: published pages, and drafts the caller can edit.
+message FindPagesRequest {
+  string query = 1;
+}
+
+message ListTagsRequest {
+  string spaceId = 1;
+}
+message TagCount {
+  string tag = 1;
+  int32 count = 2;
+}
+message ListTagsResponse {
+  repeated TagCount tags = 1;
+}
+
+// Where the page links point, for marking links to missing pages.
+message CheckLinksRequest {
+  repeated string pageIds = 1;
+}
+message CheckLinksResponse {
+  // The ids that exist and the caller can read.
+  repeated PageSummary pages = 1;
+}
+
+// ---------- Home ----------
+
+enum WidgetKind {
+  WIDGET_FEATURED = 0;
+  WIDGET_RECENT = 1;
+  WIDGET_LIST = 2;
+  WIDGET_SEARCH = 3;
+  WIDGET_LINKS = 4;
+  WIDGET_TEXT = 5;
+}
+
+message WidgetLink {
+  string label = 1;
+  string url = 2;
+}
+
+message Widget {
+  string id = 1;
+  WidgetKind kind = 2;
+  string title = 3;
+  // FEATURED: the pages chosen.
+  repeated string pageIds = 4;
+  // RECENT, LIST: how many pages.
+  int32 count = 5;
+  // LIST: a category or a tag.
+  string categoryId = 6;
+  string tag = 7;
+  // LINKS.
+  repeated WidgetLink links = 8;
+  // Wide: spans the whole home page.
+  bool wide = 9;
+  // Filled by the server for FEATURED, RECENT and LIST.
+  repeated PageSummary pages = 10;
+}
+
+message GetHomeRequest {
+  string spaceId = 1;
+}
+message GetHomeResponse {
+  repeated Widget widgets = 1;
+}
+message SaveHomeRequest {
+  string spaceId = 1;
+  repeated Widget widgets = 2;
+}
+
+// ---------- Reports and following ----------
+
+enum ReportKind {
+  REPORT_ERROR = 0;
+  REPORT_ADDITION = 1;
+}
+
+message Report {
+  string id = 1;
+  string pageId = 2;
+  string pageTitle = 3;
+  string spaceId = 4;
+  ReportKind kind = 5;
+  string text = 6;
+  string authorId = 7;
+  int64 createdAt = 8;
+  int64 resolvedAt = 9;
+  string resolvedBy = 10;
+}
+
+message SendReportRequest {
+  string pageId = 1;
+  ReportKind kind = 2;
+  string text = 3;
+}
+
+message ListReportsRequest {
+  // Empty: every space the caller edits.
+  string spaceId = 1;
+  string pageId = 2;
+  bool resolved = 3;
+}
+message ListReportsResponse {
+  repeated Report reports = 1;
+}
+
+message ResolveReportRequest {
+  string id = 1;
+  // False reopens it.
+  bool resolved = 2;
+}
+
+message FollowRequest {
+  // "page" or "category".
+  string kind = 1;
+  string id = 2;
+  bool follow = 3;
+}
+
+message FollowingRequest {
+  string kind = 1;
+  string id = 2;
+}
+message FollowingResponse {
+  bool following = 1;
+}
+
+// ---------- Events ----------
+
+message SpacesEvent {}
+
+message SpaceEvent {
+  string spaceId = 1;
+}
+
+message PageEvent {
+  string pageId = 1;
+  string spaceId = 2;
+}
+
+service WikiService {
+  rpc GetMe(rootsdk.Void) returns (GetMeResponse);
+
+  rpc ListSpaces(rootsdk.Void) returns (ListSpacesResponse);
+  rpc SaveSpace(SaveSpaceRequest) returns (SaveSpaceResponse);
+  rpc DeleteSpace(IdRequest) returns (Ack);
+  rpc ReorderSpaces(ReorderRequest) returns (Ack);
+  rpc SetSpaceStyle(SetStyleRequest) returns (Ack);
+  rpc GetAccess(GetAccessRequest) returns (GetAccessResponse);
+  rpc SetAccess(SetAccessRequest) returns (Ack);
+  rpc ListRoles(rootsdk.Void) returns (ListRolesResponse);
+
+  rpc ListCategories(ListCategoriesRequest) returns (ListCategoriesResponse);
+  rpc SaveCategory(SaveCategoryRequest) returns (SaveCategoryResponse);
+  rpc MoveCategory(MoveCategoryRequest) returns (Ack);
+  rpc DeleteCategory(IdRequest) returns (Ack);
+
+  rpc ListPageTypes(rootsdk.Void) returns (ListPageTypesResponse);
+  rpc SavePageType(PageType) returns (SavePageTypeResponse);
+  rpc DeletePageType(IdRequest) returns (Ack);
+  rpc ReorderPageTypes(ReorderRequest) returns (Ack);
+
+  rpc ListPages(ListPagesRequest) returns (ListPagesResponse);
+  rpc GetPage(IdRequest) returns (GetPageResponse);
+  rpc CreatePage(CreatePageRequest) returns (CreatePageResponse);
+  rpc UpdatePage(UpdatePageRequest) returns (Ack);
+  rpc SetCommunity(SetCommunityRequest) returns (Ack);
+  rpc MovePage(MovePageRequest) returns (Ack);
+  rpc DeletePage(IdRequest) returns (Ack);
+  rpc Publish(PublishRequest) returns (Ack);
+  rpc ListRevisions(IdRequest) returns (ListRevisionsResponse);
+  rpc GetContent(GetContentRequest) returns (GetContentResponse);
+  rpc Search(SearchRequest) returns (SearchResponse);
+  rpc FindPages(FindPagesRequest) returns (SearchResponse);
+  rpc ListTags(ListTagsRequest) returns (ListTagsResponse);
+  rpc CheckLinks(CheckLinksRequest) returns (CheckLinksResponse);
+
+  rpc GetHome(GetHomeRequest) returns (GetHomeResponse);
+  rpc SaveHome(SaveHomeRequest) returns (Ack);
+
+  rpc SendReport(SendReportRequest) returns (Ack);
+  rpc ListReports(ListReportsRequest) returns (ListReportsResponse);
+  rpc ResolveReport(ResolveReportRequest) returns (Ack);
+  rpc Follow(FollowRequest) returns (Ack);
+  rpc Following(FollowingRequest) returns (FollowingResponse);
+
+  rpc BroadcastSpacesChanged(SpacesEvent) returns (rootsdk.Void);
+  // Categories, page lists or the home page of a space changed.
+  rpc BroadcastSpaceChanged(SpaceEvent) returns (rootsdk.Void);
+  rpc BroadcastPageChanged(PageEvent) returns (rootsdk.Void);
+}

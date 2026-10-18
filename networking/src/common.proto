@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+// Answer of an action with nothing to return. The generated client does
+// not wait for rootsdk.Void calls nor report their errors, so actions the
+// interface waits on answer with this instead.
+message Ack {
+  bool ok = 1;
+}
+
+// Access levels, from lowest to highest.
+enum AccessLevel {
+  INVISIBLE = 0;
+  READ = 1;
+  // Can comment and suggest changes, not edit directly.
+  COMMENT = 2;
+  EDIT = 3;
+  ADMIN = 4;
+}
+
+message Member {
+  string userId = 1;
+  string nickname = 2;
+}
+
+message ListMembersResponse {
+  repeated Member members = 1;
+}

@@ -1,0 +1,59 @@
+syntax = "proto3";
+
+import "common.proto";
+
+// A saved state of a document: automatic (every 10 minutes of editing) or
+// named by a member.
+message Version {
+  int64 id = 1;
+  string docId = 2;
+  // ms since epoch
+  int64 createdAt = 3;
+  // Empty for automatic versions.
+  string name = 4;
+  // Who named it; empty for automatic versions.
+  string authorId = 5;
+}
+
+message ListVersionsRequest {
+  string docId = 1;
+  // Paging: only versions older than this id (0 = newest first page).
+  int64 beforeId = 2;
+}
+message ListVersionsResponse {
+  repeated Version versions = 1;
+  bool more = 2;
+}
+
+message SaveVersionRequest {
+  string docId = 1;
+  string name = 2;
+}
+message SaveVersionResponse {
+  Version version = 1;
+}
+
+message RenameVersionRequest {
+  int64 id = 1;
+  string name = 2;
+}
+
+// The Yjs state of a version, split like DocService.Open when large.
+message GetVersionRequest {
+  int64 id = 1;
+  string transferId = 2;
+  int32 chunk = 3;
+}
+message GetVersionResponse {
+  bytes state = 1;
+  int32 chunk = 2;
+  int32 totalChunks = 3;
+  string transferId = 4;
+}
+
+service HistoryService {
+  rpc ListVersions(ListVersionsRequest) returns (ListVersionsResponse);
+  rpc SaveVersion(SaveVersionRequest) returns (SaveVersionResponse);
+  rpc RenameVersion(RenameVersionRequest) returns (Ack);
+  rpc GetVersion(GetVersionRequest) returns (GetVersionResponse);
+}

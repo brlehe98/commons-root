@@ -1,0 +1,59 @@
+syntax = "proto3";
+
+import "rootsdk/types.proto";
+
+// Yjs payloads travel as raw bytes. Anything above the 256 KiB Root message
+// limit is split into chunks that share a transfer id.
+
+message OpenRequest {
+  string docId = 1;
+  bytes stateVector = 2;
+  string transferId = 3;
+  int32 chunk = 4;
+}
+
+message OpenResponse {
+  bytes update = 1;
+  int32 chunk = 2;
+  int32 totalChunks = 3;
+  string transferId = 4;
+  bytes serverStateVector = 5;
+  bytes awareness = 6;
+}
+
+message PushRequest {
+  string docId = 1;
+  bytes update = 2;
+  bytes awareness = 3;
+  string transferId = 4;
+  int32 chunk = 5;
+  int32 totalChunks = 6;
+}
+
+message PushResponse {
+  bool ok = 1;
+}
+
+message DocEvent {
+  string docId = 1;
+  bytes update = 2;
+  bytes awareness = 3;
+  // Set when an update was too large to broadcast: clients must call Open.
+  bool resync = 4;
+}
+
+message CommitPhotoRequest {
+  string token = 1;
+}
+
+message CommitPhotoResponse {
+  string uri = 1;
+}
+
+service DocService {
+  rpc Open(OpenRequest) returns (OpenResponse);
+  rpc Push(PushRequest) returns (PushResponse);
+  rpc CommitPhoto(CommitPhotoRequest) returns (CommitPhotoResponse);
+
+  rpc BroadcastUpdate(DocEvent) returns (rootsdk.Void);
+}

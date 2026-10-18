@@ -1,0 +1,68 @@
+{
+  "id": "ADHQHjrFhgmUi7g892mrTQ",
+  "version": "1.0.17",
+  "package": {
+    "client": {
+      "deploy": "client/dist"
+    },
+    "server": {
+      "launch": "server/dist/main.js",
+      "deploy": [
+        "server/dist",
+        "networking/gen/server"
+      ],
+      "nodeModules": [
+        "node_modules"
+      ]
+    }
+  },
+  "settings": {
+    "groups": [
+      {
+        "key": "access",
+        "title": "Access",
+        "items": [
+          {
+            "key": "appAdmins",
+            "title": "App admins",
+            "description": "Roles and members who can create workspaces and set who sees them. Until someone is chosen, everyone is admin.",
+            "required": false,
+            "confirmation": "Save",
+            "roleOrMember": {
+              "selectBehavior": "roleMultiAndUserMulti",
+              "userIds": [],
+              "communityRoleIds": []
+            }
+          }
+        ]
+      },
+      {
+        "key": "retention",
+        "title": "Retention",
+        "items": [
+          {
+            "key": "trashDays",
+            "title": "Days a deleted text tab stays in the trash",
+            "required": false,
+            "confirmation": "Save",
+            "text": {
+              "defaultValue": "30",
+              "regex": "^[1-9][0-9]{0,2}$"
+            }
+          },
+          {
+            "key": "archiveDays",
+            "title": "Days a published article can return to the board",
+            "description": "After this, the article moves to the final archive and its history is compressed.",
+            "required": false,
+            "confirmation": "Save",
+            "text": {
+              "defaultValue": "90",
+              "regex": "^[1-9][0-9]{0,3}$"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

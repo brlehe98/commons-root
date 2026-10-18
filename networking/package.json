@@ -1,0 +1,6 @@
+{
+  "name": "@commons-root/networking",
+  "scripts": {
+    "build": "rootsdk build proto"
+  }
+}
