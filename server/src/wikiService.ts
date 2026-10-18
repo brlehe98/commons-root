@@ -96,6 +96,7 @@ import {
   PageRow,
   PageTypeRow,
   parseJson,
+  writeParagraphs,
   setTags,
   summaries,
   tagsOf,
@@ -183,6 +184,12 @@ const DEFAULT_HOME = (): Widget[] => [
   { id: crypto.randomUUID(), kind: WidgetKind.WIDGET_RECENT, title: "", pageIds: [], count: 8, categoryId: "", tag: "", links: [], wide: false, pages: [] },
 ];
 
+// Shown until the editors write their own; they edit it from the home page.
+const WELCOME = [
+  "Welcome to the knowledge base: guides, tools, references and resources shared by the community.",
+  "Browse the categories on the left, search, or open a featured page.",
+];
+
 export async function initWiki() {
   if (!(await get("SELECT 1 FROM spaces WHERE main = 1", []))) {
     await run("INSERT INTO spaces (id, name, position, main, everyone_reads, home) VALUES (?, ?, 0, 1, 1, ?)", [
@@ -190,6 +197,16 @@ export async function initWiki() {
       "Knowledge base",
       JSON.stringify(DEFAULT_HOME()),
     ]);
+  }
+  // The main space's first text block opens with a welcome, once.
+  const main = await get<{ id: string; home: string }>("SELECT id, home FROM spaces WHERE main = 1", []);
+  const welcome = main && parseJson<Widget[]>(main.home, []).find((w) => w.kind === WidgetKind.WIDGET_TEXT);
+  if (main && welcome) {
+    const docId = `widget:${main.id}_${welcome.id}`;
+    if (!(await get("SELECT 1 FROM docs WHERE id = ?", [docId]))) {
+      await writeParagraphs(docId, WELCOME);
+      await flushDoc(docId);
+    }
   }
   if (!(await get("SELECT 1 FROM page_types", []))) {
     for (let i = 0; i < BASE_TYPES.length; i++) {

@@ -25,10 +25,10 @@
 .side-new { margin: 8px 0 4px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
 .side-heading {
   display: flex; align-items: center; justify-content: space-between; margin: 18px 0 4px; padding: 0 8px;
-  color: var(--muted); font-size: 12.5px; font-weight: 600;
+  color: var(--muted); font-size: 15px; font-weight: 600;
 }
 .side-heading button.icon { padding: 3px; }
-.side-empty { padding: 0 8px; font-size: 13px; }
+.side-empty { padding: 0 8px; font-size: 14px; }
 
 .cat-tree { list-style: none; margin: 0; padding: 0; }
 .cat-tree.sub { padding-left: 14px; }
@@ -301,3 +301,9 @@ button.page-tab:hover:not(:disabled) { background: none; border: none; border-bo
   .search-tag { width: 100%; }
   .page-editor .layout { height: calc(100vh - var(--top-offset, 0px) - 60px); }
 }
+
+/* ---------- Dialogs with several fields ---------- */
+.dialog-field { display: flex; flex-direction: column; gap: 5px; margin-top: 12px; font-family: var(--font-ui); }
+.dialog-field > span { font-size: 13px; font-weight: 600; color: var(--muted); }
+.dialog-field input, .dialog-field select, .dialog-field textarea { width: 100%; box-sizing: border-box; }
+.dialog-field textarea { resize: vertical; }

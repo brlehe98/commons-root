@@ -263,6 +263,23 @@ export async function writeTemplate(typeId: string, headings: string[]) {
   });
 }
 
+/** Writes plain paragraphs into an empty shared text (a home page's welcome block). */
+export async function writeParagraphs(docId: string, paragraphs: string[]) {
+  const doc = await getDoc(docId);
+  const body = doc.ydoc.getXmlFragment("body");
+  if (body.length) return;
+  doc.ydoc.transact(() =>
+    body.insert(
+      0,
+      paragraphs.map((text) => {
+        const p = new Y.XmlElement("paragraph");
+        p.insert(0, [new Y.XmlText(text)]);
+        return p;
+      }),
+    ),
+  );
+}
+
 /** The levels of the space's members who can publish, for notifications. */
 export async function spaceLevel(userId: UserGuid, spaceId: string) {
   return levelIn(userId, spaceId);

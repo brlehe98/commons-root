@@ -30,7 +30,8 @@ import type { PageRow } from "./pages";
  * space's writers added to the spell check). Anything else is refused, so no
  * one can open documents the app never made.
  */
-const ID = /^[A-Za-z0-9_-]{1,64}$/;
+// Long enough for "<spaceId>_<widgetId>" (two UUIDs).
+const ID = /^[A-Za-z0-9_-]{1,140}$/;
 const UUIDISH = /^[A-Za-z0-9-]{1,64}$/;
 
 export type DocAccess = {
