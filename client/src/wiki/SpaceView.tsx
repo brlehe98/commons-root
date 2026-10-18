@@ -10,7 +10,7 @@ import {
   FolderPlus,
   Hash,
   Home as HomeIcon,
-  Menu as MenuIcon,
+  LayoutGrid,
   Pencil,
   Plus,
   Trash2,
@@ -25,12 +25,24 @@ import { NavLink, pageRoute, SpaceAt, useNav } from "./nav";
 import Home from "./Home";
 import PageView from "./PageView";
 import PageList from "./PageList";
-import SearchBox from "./SearchBox";
+import TopBar, { BarTool } from "./TopBar";
+import AllPages from "./AllPages";
 import Search from "./Search";
 import { useBackButton } from "../ui/backButton";
 import { t } from "../i18n";
 
-type Props = { space: Space; spaces: Space[]; types: PageType[]; at: SpaceAt; search?: { query: string; spaceId?: string } };
+type Props = {
+  space: Space;
+  spaces: Space[];
+  types: PageType[];
+  at: SpaceAt;
+  search?: { query: string; spaceId?: string };
+  /** The bar's tools (reports, notifications, settings). */
+  tools: BarTool[];
+  /** A view of the app shown in place of the space's own (settings, reports). */
+  content?: React.ReactNode;
+  notice?: string;
+};
 
 const MENU_KEY = "commons.menuPinned";
 const narrow = () => window.matchMedia("(max-width: 920px)").matches;
@@ -58,11 +70,11 @@ function useMenuPinned(): [boolean, (pinned: boolean) => void] {
 }
 
 /**
- * A space, laid out as Wikipedia: a bar with the main menu button and the
- * search, the main menu on the side (categories, recent changes…), and the
- * home page, a page or a list in the middle.
+ * A space, laid out as Wikipedia: one bar at the top, the main menu on the
+ * side (categories, recent changes…), and the home page, a page or a list
+ * in the middle.
  */
-const SpaceView: React.FC<Props> = ({ space, spaces, types, at, search }) => {
+const SpaceView: React.FC<Props> = ({ space, spaces, types, at, search, tools, content, notice }) => {
   const { go } = useNav();
   const { value: categories = [], reload } = useLoaded(`categories:${space.id}`, () => wiki.listCategories({ spaceId: space.id }).then((r) => r.categories), {
     spaceId: space.id,
@@ -133,10 +145,13 @@ const SpaceView: React.FC<Props> = ({ space, spaces, types, at, search }) => {
           <X size={16} />
         </button>
       </div>
-      <NavLink className={at.kind === "home" && !search ? "side-link on" : "side-link"} to={{ view: "space", spaceId: space.id }}>
+      <NavLink className={at.kind === "home" && !search && !content ? "side-link on" : "side-link"} to={{ view: "space", spaceId: space.id }}>
         <HomeIcon size={15} /> {t("space.home")}
       </NavLink>
-      <NavLink className={at.kind === "recent" ? "side-link on" : "side-link"} to={{ view: "space", spaceId: space.id, at: { kind: "recent" } }}>
+      <NavLink className={at.kind === "all" && !content ? "side-link on" : "side-link"} to={{ view: "space", spaceId: space.id, at: { kind: "all" } }}>
+        <LayoutGrid size={15} /> {t("space.allPages")}
+      </NavLink>
+      <NavLink className={at.kind === "recent" && !content ? "side-link on" : "side-link"} to={{ view: "space", spaceId: space.id, at: { kind: "recent" } }}>
         <Clock size={15} /> {t("space.recent")}
       </NavLink>
       <button className="side-link side-button" onClick={randomPage}>
@@ -165,7 +180,8 @@ const SpaceView: React.FC<Props> = ({ space, spaces, types, at, search }) => {
   );
 
   let main: React.ReactNode;
-  if (search) main = <Search query={search.query} spaceId={search.spaceId} spaces={spaces} types={types} />;
+  if (content) main = content;
+  else if (search) main = <Search query={search.query} spaceId={search.spaceId} spaces={spaces} types={types} />;
   else switch (at.kind) {
     case "page":
       main = (
@@ -209,26 +225,27 @@ const SpaceView: React.FC<Props> = ({ space, spaces, types, at, search }) => {
     case "recent":
       main = <RecentView space={space} types={types} />;
       break;
+    case "all":
+      main = <AllPages space={space} types={types} categories={categories} />;
+      break;
     default:
       main = <Home key={space.id} space={space} types={types} categories={categories} />;
   }
 
   return (
     <div className={pinned ? "space" : "space menu-hidden"}>
-      <div className="space-bar">
-        <button className="icon menu-toggle" title={t("space.mainMenu")} aria-expanded={sideOpen || (pinned && !narrow())} onClick={toggleMenu}>
-          <MenuIcon size={18} />
-        </button>
-        <SearchBox space={space} spaces={spaces} />
-        {canEdit && (
-          <button className="space-new" title={t("space.newPage")} onClick={() => newPage()}>
-            <Plus size={16} /> <span className="space-new-label">{t("space.newPage")}</span>
-          </button>
-        )}
-      </div>
+      <TopBar
+        space={space}
+        spaces={spaces}
+        menuOpen={sideOpen || (pinned && !narrow())}
+        onMenu={toggleMenu}
+        onNewPage={canEdit ? () => newPage() : undefined}
+        tools={tools}
+      />
       {side}
       {sideOpen && <div className="side-scrim" onClick={() => setSideOpen(false)} />}
       <main className="space-main">
+        {notice && <div className="banner">{notice}</div>}
         {problem && (
           <div className="banner error" onClick={() => setProblem(null)}>
             {problem}

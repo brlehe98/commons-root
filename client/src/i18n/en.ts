@@ -7,7 +7,6 @@ const catalog = {
   // App shell
   "app.loadError": "Could not load the app: {error}",
   "app.loading": "Loading…",
-  "app.myNotifications": "My notifications",
   "app.notifications": "Notifications",
   "app.settings": "Settings",
   "app.adminsUnset": "No app admin yet: everyone can change the settings. Choose admins in the app's settings in Root.",
@@ -261,9 +260,6 @@ const catalog = {
   "spell.addTitle": "Add “{word}” to this space's dictionary",
 
   // Top bar
-  "nav.moreWorkspaces": "Show the other spaces",
-  "nav.more": { one: "{count} more", other: "{count} more" },
-  "nav.tools": "Search, reports, notifications, settings",
 
   // Access level, shown in the toolbar
   "access.readHint": "You can read and copy this text, not change it.",
@@ -354,6 +350,14 @@ const catalog = {
   "read.lastPublished": "Last published on {date} by {name}.",
   "read.changesWaiting": "Changes are waiting to be published.",
   "read.missingLink": "This page does not exist yet",
+  "space.allPages": "All pages",
+  "space.choose": "Choose a space",
+  "app.more": "More",
+  "all.any": "All",
+  "all.sort": "Sort",
+  "all.byTitle": "By title",
+  "all.byDate": "Latest first",
+  "all.empty": "No page matches these filters.",
   "read.edit": "edit",
   "read.editSection": "Edit section: {section}",
   "read.openPhoto": "Open the photo",

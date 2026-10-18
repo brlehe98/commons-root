@@ -5,7 +5,6 @@ export const tr: Messages = {
   // App shell
   "app.loadError": "Uygulama yüklenemedi: {error}",
   "app.loading": "Yükleniyor…",
-  "app.myNotifications": "Bildirimlerim",
   "app.notifications": "Bildirimler",
   "app.settings": "Ayarlar",
   "app.adminsUnset": "Henüz yönetici yok: herkes ayarları değiştirebilir. Yöneticileri Root'taki uygulama ayarlarından seçin.",
@@ -248,9 +247,6 @@ export const tr: Messages = {
   "lang.hint": "Yazım ve okunabilirlik bu dile göre denetlenir.",
 
   // Top bar
-  "nav.moreWorkspaces": "Diğer çalışma alanlarını göster",
-  "nav.more": { one: "{count} daha", other: "{count} daha" },
-  "nav.tools": "Arama, raporlar, bildirimler, ayarlar",
 
   // Access level, shown in the toolbar
   "access.readHint": "Bu metni okuyabilir ve kopyalayabilirsiniz, değiştiremezsiniz.",
@@ -347,6 +343,14 @@ export const tr: Messages = {
   "read.lastPublished": "Son yayım: {date}, {name}.",
   "read.changesWaiting": "Yayımlanmayı bekleyen değişiklikler var.",
   "read.missingLink": "Bu sayfa henüz yok",
+  "space.allPages": "Tüm sayfalar",
+  "space.choose": "Alan seçin",
+  "app.more": "Daha fazla",
+  "all.any": "Tümü",
+  "all.sort": "Sırala",
+  "all.byTitle": "Başlığa göre",
+  "all.byDate": "En yeni",
+  "all.empty": "Bu filtrelere uyan sayfa yok.",
   "read.edit": "düzenle",
   "read.editSection": "Bölümü düzenle: {section}",
   "read.openPhoto": "Fotoğrafı aç",

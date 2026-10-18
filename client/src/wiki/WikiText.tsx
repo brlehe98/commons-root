@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { PageSummary } from "@commons-root/gen-shared";
-import { fileUrl } from "../editor/attachment";
+import { fileUrl, isPdf } from "../editor/attachment";
 import { PMNode, wiki } from "./api";
 import { outline, PAGE_LINK } from "./outline";
 import Lightbox, { StoredImage } from "./Lightbox";
@@ -100,6 +100,8 @@ const WikiText: React.FC<Props> = ({ doc, onOpenPage, onEditSection, aside }) =>
         </a>
       );
     }
+    // Only web and mail addresses open; anything else (a script) stays plain text.
+    if (!/^(https?:|mailto:)/i.test(href)) return <React.Fragment key={key}>{children}</React.Fragment>;
     const outside = /^https?:/i.test(href);
     return (
       <a key={key} href={href} className={outside ? "external" : undefined} target="_blank" rel="noopener noreferrer">
@@ -235,14 +237,18 @@ const WikiText: React.FC<Props> = ({ doc, onOpenPage, onEditSection, aside }) =>
           </figure>
         );
       }
-      case "attachment":
+      case "attachment": {
+        const url = fileUrl(String(n.attrs?.uri ?? ""));
+        const name = String(n.attrs?.name ?? "");
         return (
           <div key={key} className="attachment">
-            <a href={fileUrl(String(n.attrs?.uri ?? ""))} target="_blank" rel="noopener noreferrer">
-              {String(n.attrs?.name ?? "") || t("file.default")}
+            <a href={url || undefined} target="_blank" rel="noopener noreferrer">
+              {name || t("file.default")}
             </a>
+            {url && isPdf(name) && <iframe className="pdf-view" src={url} title={name} loading="lazy" referrerPolicy="no-referrer" />}
           </div>
         );
+      }
       default:
         // A block this version does not know: its text still shows.
         return n.content?.some((c) => c.type === "text") ? <p key={key}>{(n.content ?? []).map(inline)}</p> : <React.Fragment key={key}>{kids()}</React.Fragment>;

@@ -5,7 +5,6 @@ export const pt: Messages = {
   // App shell
   "app.loadError": "Não foi possível carregar o app: {error}",
   "app.loading": "Carregando…",
-  "app.myNotifications": "Minhas notificações",
   "app.notifications": "Notificações",
   "app.settings": "Configurações",
   "app.adminsUnset": "Ainda sem administradores: todos podem mudar as configurações. Escolha-os nas configurações do app no Root.",
@@ -248,9 +247,6 @@ export const pt: Messages = {
   "lang.hint": "A ortografia e a legibilidade seguem este idioma.",
 
   // Top bar
-  "nav.moreWorkspaces": "Mostrar os outros espaços",
-  "nav.more": { one: "Mais {count}", other: "Mais {count}" },
-  "nav.tools": "Busca, sinalizações, notificações, configurações",
 
   // Access level, shown in the toolbar
   "access.readHint": "Você pode ler e copiar este texto, não alterá-lo.",
@@ -347,6 +343,14 @@ export const pt: Messages = {
   "read.lastPublished": "Publicada pela última vez em {date} por {name}.",
   "read.changesWaiting": "Há alterações aguardando publicação.",
   "read.missingLink": "Esta página ainda não existe",
+  "space.allPages": "Todas as páginas",
+  "space.choose": "Escolher um espaço",
+  "app.more": "Mais",
+  "all.any": "Todos",
+  "all.sort": "Ordenar",
+  "all.byTitle": "Por título",
+  "all.byDate": "Mais recentes",
+  "all.empty": "Nenhuma página corresponde a estes filtros.",
   "read.edit": "editar",
   "read.editSection": "Editar seção: {section}",
   "read.openPhoto": "Abrir a foto",

@@ -12,6 +12,7 @@ export type SpaceAt =
   | { kind: "home" }
   | { kind: "page"; pageId: string; tab?: "read" | "edit" | "history"; revisionId?: string; section?: { index: number; text: string } }
   | { kind: "recent" }
+  | { kind: "all" }
   | { kind: "category"; categoryId: string }
   | { kind: "tag"; tag: string }
   | { kind: "tags" }

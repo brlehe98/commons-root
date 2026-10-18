@@ -9,21 +9,38 @@
 .space { flex: 1; min-height: 0; display: grid; grid-template-columns: 232px minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
 .space.menu-hidden { grid-template-columns: minmax(0, 1fr); }
 .space.menu-hidden .space-side:not(.open) { display: none; }
-.space-bar {
-  grid-column: 1 / -1; display: flex; align-items: center; gap: 12px; padding: 8px 16px;
-  border-bottom: 1px solid var(--border); background: var(--bg); font-family: var(--font-ui); min-width: 0;
+/* One bar: main menu, space, search, new page and the app's tools. */
+.top-bar {
+  grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; min-width: 0; padding: 8px 16px;
+  border-bottom: 1px solid var(--border-strong); background: var(--card); font-family: var(--font-ui);
 }
-.space-bar .menu-toggle { flex: none; }
-.space-new { flex: none; margin-left: auto; display: inline-flex; align-items: center; gap: 6px; }
+button.bar-button, .space-pick .menu-trigger, .bar-more .menu-trigger {
+  flex: none; display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 4px 10px;
+  border: 1px solid var(--border-strong); border-radius: 6px; background: var(--card); color: var(--text); font-size: 14px; white-space: nowrap;
+}
+button.bar-button:hover:not(:disabled), .space-pick .menu-trigger:hover:not(:disabled), .bar-more .menu-trigger:hover:not(:disabled) { background: var(--hover); border-color: var(--text); }
+button.bar-button.on, button.bar-button.on:hover:not(:disabled) { background: var(--selected); border-color: var(--text); font-weight: 600; }
+button.menu-toggle { padding: 4px 8px; }
+.space-pick { flex: none; min-width: 0; }
+.space-pick .menu-trigger { font-weight: 600; max-width: 240px; }
+.space-pick.single { display: inline-flex; align-items: center; gap: 6px; padding: 0 6px; font-weight: 600; font-size: 14px; max-width: 240px; }
+.space-pick-name { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.top-bar .search-bar { flex: 1 1 auto; }
+.bar-new { margin-left: auto; }
+.bar-tools { display: flex; align-items: center; gap: 6px; flex: none; }
+.bar-more { display: none; flex: none; }
+.bar-count { display: none; min-width: 18px; padding: 0 5px; border-radius: 9px; background: var(--ink); color: var(--on-ink); font-size: 12px; font-weight: 600; line-height: 18px; text-align: center; }
+.bar-more .menu-trigger { padding: 4px 8px; }
 .space-side {
-  overflow-y: auto; padding: 16px 12px 24px 16px; border-right: 1px solid var(--border);
+  overflow-y: auto; padding: 16px 12px 24px 16px; border-right: 1px solid var(--border-strong);
   display: flex; flex-direction: column; gap: 2px; font-family: var(--font-ui); font-size: 14px; min-height: 0;
 }
-.space-main { overflow-y: auto; min-width: 0; min-height: 0; padding: 20px clamp(16px, 3.5vw, 44px) 64px; container: wiki / inline-size; }
+.space-main { font-family: var(--font-ui); overflow-y: auto; min-width: 0; min-height: 0; padding: 20px clamp(16px, 3.5vw, 44px) 64px; container: wiki / inline-size; }
 .space-main > * { max-width: 1120px; margin-left: auto; margin-right: auto; }
 .space-main > .wiki-page { max-width: 1280px; }
 .space-main > .banner { margin-bottom: 16px; border-radius: 8px; }
 .side-scrim { display: none; }
+.back-link { display: inline-flex; align-items: center; gap: 6px; margin-bottom: 12px; }
 .side-top { display: none; }
 
 .side-link {
@@ -144,22 +161,22 @@ span.page-tab.on { cursor: default; }
 }
 
 /* ---------- The text, read and edited, in Wikipedia's look ---------- */
-.wiki-read, .layout.wiki .article .tiptap {
+.wiki-read, .layout:is(.wiki, .field, .reader) .article .tiptap {
   font-family: var(--font-ui); font-size: 16px; line-height: 1.6; color: var(--text); counter-reset: footnote;
 }
 .wiki-read::after { content: ""; display: block; clear: both; }
 .aside-top { display: contents; }
 .aside-lead { display: none; }
-.wiki-read > :first-child, .layout.wiki .article .tiptap > :first-child { margin-top: 0; }
-.wiki-read p, .layout.wiki .article .tiptap p { margin: 0.5em 0 0.8em; }
-.wiki-read h1, .wiki-read h2, .layout.wiki .article .tiptap h1, .layout.wiki .article .tiptap h2 {
+.wiki-read > :first-child, .layout:is(.wiki, .field, .reader) .article .tiptap > :first-child { margin-top: 0; }
+.wiki-read p, .layout:is(.wiki, .field, .reader) .article .tiptap p { margin: 0.5em 0 0.8em; }
+.wiki-read h1, .wiki-read h2, .layout:is(.wiki, .field, .reader) .article .tiptap h1, .layout:is(.wiki, .field, .reader) .article .tiptap h2 {
   font-family: var(--font-serif); font-weight: 500; line-height: 1.3; border-bottom: 1px solid var(--border); padding-bottom: 3px; margin: 1.1em 0 0.4em;
   overflow: hidden;
 }
-.wiki-read h1, .layout.wiki .article .tiptap h1 { font-size: 1.7em; }
-.wiki-read h2, .layout.wiki .article .tiptap h2 { font-size: 1.45em; }
-.wiki-read h3, .layout.wiki .article .tiptap h3 { font-family: var(--font-ui); font-weight: 700; font-size: 1.18em; line-height: 1.4; margin: 0.9em 0 0.3em; }
-.wiki-read h4, .layout.wiki .article .tiptap h4 { font-family: var(--font-ui); font-weight: 700; font-size: 1em; margin: 0.8em 0 0.2em; }
+.wiki-read h1, .layout:is(.wiki, .field, .reader) .article .tiptap h1 { font-size: 1.7em; }
+.wiki-read h2, .layout:is(.wiki, .field, .reader) .article .tiptap h2 { font-size: 1.45em; }
+.wiki-read h3, .layout:is(.wiki, .field, .reader) .article .tiptap h3 { font-family: var(--font-ui); font-weight: 700; font-size: 1.18em; line-height: 1.4; margin: 0.9em 0 0.3em; }
+.wiki-read h4, .layout:is(.wiki, .field, .reader) .article .tiptap h4 { font-family: var(--font-ui); font-weight: 700; font-size: 1em; margin: 0.8em 0 0.2em; }
 .wiki-read ul, .wiki-read ol { margin: 0.4em 0 0.8em; padding-left: 1.6em; }
 .wiki-read li { margin: 0.15em 0; }
 .wiki-read blockquote p { margin: 0.3em 0; }
@@ -191,12 +208,12 @@ a.external::after {
 .targeted { background: color-mix(in srgb, var(--accent) 16%, transparent); border-radius: 3px; transition: background-color 1.2s ease; }
 
 /* Photos as Wikipedia's thumbnails: to the right, framed, captioned. */
-.wiki-read figure.thumb, .layout.wiki .article .tiptap figure {
+.wiki-read figure.thumb, .layout:is(.wiki, .field, .reader) .article .tiptap figure {
   float: right; clear: right; width: min(300px, 45%); margin: 0.3em 0 1em 1.4em; padding: 4px;
   border: 1px solid var(--border); background: var(--wiki-box, color-mix(in srgb, var(--panel) 35%, var(--card))); box-sizing: border-box;
 }
-.wiki-read figure.thumb img, .layout.wiki .article .tiptap figure img { width: 100%; height: auto; display: block; border-radius: 0; }
-.wiki-read figure.thumb figcaption, .layout.wiki .article .tiptap figcaption { font-family: var(--font-ui); font-size: 13.5px; line-height: 1.45; color: var(--text); padding: 5px 3px 2px; }
+.wiki-read figure.thumb img, .layout:is(.wiki, .field, .reader) .article .tiptap figure img { width: 100%; height: auto; display: block; border-radius: 0; }
+.wiki-read figure.thumb figcaption, .layout:is(.wiki, .field, .reader) .article .tiptap figcaption { font-family: var(--font-ui); font-size: 13.5px; line-height: 1.45; color: var(--text); padding: 5px 3px 2px; }
 button.thumb-open { display: block; width: 100%; padding: 0; min-height: 0; border: none; background: none; cursor: zoom-in; }
 button.thumb-open:hover:not(:disabled) { background: none; border: none; }
 
@@ -208,6 +225,7 @@ button.thumb-open:hover:not(:disabled) { background: none; border: none; }
 .attachment a::before { content: ""; width: 14px; height: 16px; border: 1.5px solid currentColor; border-radius: 2px 6px 2px 2px; flex: none; }
 .attachment a:hover { border-color: var(--border-strong); }
 .ProseMirror-selectednode.attachment a { outline: 2px solid var(--accent); }
+.pdf-view { display: block; width: 100%; height: min(75vh, 720px); margin-top: 8px; border: 1px solid var(--border-strong); border-radius: 4px; background: var(--card); clear: both; }
 
 .references { clear: both; margin-top: 28px; font-family: var(--font-ui); font-size: 14px; }
 .references h2, .subcategories h2, .list-subtitle {
@@ -393,9 +411,7 @@ a.catlinks-label { color: var(--link); }
 .widget-title { font-family: var(--font-serif); font-weight: 500; font-size: 19px; margin: 0 0 8px; padding-bottom: 4px; border-bottom: 1px solid var(--border); }
 .widget .page-item { padding: 8px 0; }
 .widget .page-item-title { font-size: 16px; }
-.widget-text .layout.reader .article .tiptap { padding: 0; font-size: 16.5px; }
-.widget-text.editing { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
-.widget-text.editing .layout { height: 320px; }
+.template-editor { margin-top: 8px; }
 .widget-search { display: flex; align-items: center; gap: 8px; font-family: var(--font-ui); }
 .widget-search input { flex: 1; min-width: 0; }
 .widget-search > svg { color: var(--muted); flex: none; }
@@ -462,7 +478,31 @@ a.catlinks-label { color: var(--link); }
 .row-actions > button { display: inline-flex; align-items: center; gap: 6px; }
 .sub-title { font-size: 14px; font-family: var(--font-ui); margin: 16px 0 0; }
 
+/* ---------- All pages: filters and cards ---------- */
+.filters { display: flex; flex-wrap: wrap; gap: 12px 16px; margin: 16px 0 20px; font-family: var(--font-ui); }
+.filters label { display: flex; flex-direction: column; gap: 4px; min-width: 160px; flex: 1 1 160px; max-width: 260px; }
+.filters label > span { font-size: 13px; font-weight: 600; color: var(--muted); }
+.filters select { width: 100%; }
+.page-cards { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+.page-card {
+  display: flex; flex-direction: column; gap: 8px; height: 100%; box-sizing: border-box; padding: 14px 16px;
+  border: 1px solid var(--border-strong); border-radius: 8px; background: var(--card); color: var(--text); text-decoration: none; font-family: var(--font-ui);
+}
+.page-card:hover { border-color: var(--text); box-shadow: var(--shadow-sm); }
+.page-card-title { font-family: var(--font-serif); font-size: 19px; font-weight: 500; line-height: 1.3; color: var(--link); overflow-wrap: anywhere; }
+.page-card-lead { font-size: 14px; line-height: 1.45; color: var(--text); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.page-card-meta { margin-top: auto; display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 13px; color: var(--muted); }
+.page-card-meta svg { vertical-align: -2px; }
+
 /* ---------- Narrower screens ---------- */
+/* The tools keep their icons only; "New page" keeps its label a little longer. */
+@media (max-width: 1240px) {
+  .bar-tools .bar-label { display: none; }
+  .bar-tools .bar-count { display: inline-block; }
+}
+@media (max-width: 760px) {
+  .bar-new .bar-label { display: none; }
+}
 /* Two thirds or half of a laptop screen: the main menu opens over the page. */
 @media (max-width: 920px) {
   .space, .space.menu-hidden { grid-template-columns: minmax(0, 1fr); }
@@ -493,8 +533,13 @@ a.catlinks-label { color: var(--link); }
   .wiki-read, .layout.wiki .article .tiptap { font-size: 16.5px; }
 }
 @media (max-width: 600px) {
-  .space-bar { gap: 8px; padding: 6px 10px; }
-  .space-new-label, button.search-go { display: none; }
+  .top-bar { gap: 6px; padding: 6px 10px; }
+  .top-bar .bar-label, button.search-go { display: none; }
+  .space-pick .space-pick-name { display: none; }
+  .bar-tools { display: none; }
+  .bar-more { display: block; }
+  .filters label { flex-basis: calc(50% - 8px); min-width: 0; max-width: none; }
+  .page-cards { grid-template-columns: minmax(0, 1fr); }
   .search-bar form { border-radius: 4px; }
   .search-filters { margin-left: 0; }
   .search-tag { width: 100%; }
@@ -509,3 +554,19 @@ a.catlinks-label { color: var(--link); }
 
 /* The infobox takes its own clicks: the text beside it must not cover it. */
 .layout.wiki .infobox { position: relative; z-index: 1; }
+
+/* Short texts (home blocks) edited in a plain box with a small toolbar, in the pages' look. */
+.layout.field .article .tiptap { padding: 10px 14px; min-height: 90px; box-shadow: none; }
+.layout.reader .article .tiptap { padding: 0; box-shadow: none; background: none; }
+
+/* Settings inside a space: the same margins and title as the other views. */
+.space-main > .admin { padding: 0; overflow: visible; gap: 20px; }
+.space-main .admin-head { display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 0 0 6px; margin-bottom: 20px; border-bottom: 1px solid var(--border); }
+.space-main .admin-head h1 { font-family: var(--font-serif); font-weight: 500; font-size: clamp(26px, 3vw, 32px); line-height: 1.25; letter-spacing: 0; }
+/* A narrow toolbar scrolls sideways instead of sliding under Publish. */
+.layout.wiki .toolbar.split .tb-main { overflow-x: auto; scrollbar-width: none; }
+.layout.wiki .toolbar.split .tb-main::-webkit-scrollbar { display: none; }
+@media (max-width: 600px) {
+  .admin .ws-row { flex-wrap: wrap; }
+  .admin .ws-row .ws-name { white-space: normal; }
+}

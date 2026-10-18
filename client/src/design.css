@@ -15,7 +15,7 @@
   --text: #0d1521;
   --muted: #475264;
   --border: #cdc7bb;
-  --border-strong: #948d80;
+  --border-strong: #857d70;
   --accent: #1f63b8;
   --link: #1b57a3;
   --ink: #0d1521;
@@ -48,7 +48,7 @@
   --text: #f2f2f2;
   --muted: #a7a7a8;
   --border: #232c36;
-  --border-strong: #3a4654;
+  --border-strong: #5d6b7d;
   --accent: #5aa7f0;
   --link: #6cb3f5;
   --ink: #f2f2f2;
@@ -977,7 +977,7 @@ button.link.sheet-delete-link:hover:not(:disabled) { color: var(--danger); text-
   --text: #0d1521;
   --muted: #4b5567;
   --border: #d3dae4;
-  --border-strong: #a7b1c0;
+  --border-strong: #7d8796;
   --border-card: #cbd3de;
   --accent: #1f5fbf;
   --link: #1a56b0;

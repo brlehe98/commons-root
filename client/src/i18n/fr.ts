@@ -5,7 +5,6 @@ export const fr: Messages = {
   // App shell
   "app.loadError": "Impossible de charger l'app : {error}",
   "app.loading": "Chargement…",
-  "app.myNotifications": "Mes notifications",
   "app.notifications": "Notifications",
   "app.settings": "Paramètres",
   "app.adminsUnset": "Aucun admin choisi : tout le monde peut modifier les paramètres. Choisissez les admins dans les paramètres de l'app dans Root.",
@@ -248,9 +247,6 @@ export const fr: Messages = {
   "lang.hint": "L'orthographe et la lisibilité suivent cette langue.",
 
   // Top bar
-  "nav.moreWorkspaces": "Afficher les autres espaces",
-  "nav.more": { one: "{count} autre", other: "{count} autres" },
-  "nav.tools": "Recherche, signalements, notifications, paramètres",
 
   // Access level, shown in the toolbar
   "access.readHint": "Vous pouvez lire et copier ce texte, pas le modifier.",
@@ -347,6 +343,14 @@ export const fr: Messages = {
   "read.lastPublished": "Dernière publication le {date} par {name}.",
   "read.changesWaiting": "Des modifications attendent d'être publiées.",
   "read.missingLink": "Cette page n'existe pas encore",
+  "space.allPages": "Toutes les pages",
+  "space.choose": "Choisir un espace",
+  "app.more": "Plus",
+  "all.any": "Tous",
+  "all.sort": "Trier",
+  "all.byTitle": "Par titre",
+  "all.byDate": "Plus récentes",
+  "all.empty": "Aucune page ne correspond à ces filtres.",
   "read.edit": "modifier",
   "read.editSection": "Modifier la section : {section}",
   "read.openPhoto": "Ouvrir la photo",

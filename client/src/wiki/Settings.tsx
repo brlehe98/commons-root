@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { ArrowDown, ArrowUp, BookOpen, Globe, Layers, LayoutTemplate, Plus, ShieldCheck, Trash2, Users, X } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowUp, BookOpen, Globe, Layers, LayoutTemplate, Plus, ShieldCheck, Trash2, Users, X } from "lucide-react";
 import { AccessLevel, FieldDef, FieldKind, PageType, Role, RoleAccess, Space } from "@commons-root/gen-shared";
 import SectionTitle from "../ui/SectionTitle";
 import StylePicker from "../ui/StylePicker";
@@ -36,10 +36,12 @@ type Props = { spaces: Space[]; section?: string; onChanged: () => void };
 
 /** For app admins: the spaces and who writes in them, and the page types. */
 const Settings: React.FC<Props> = ({ spaces, section = "spaces", onChanged }) => {
-  const { replace } = useNav();
+  const { go, replace } = useNav();
   const [error, setError] = useState<string | null>(null);
   const space = spaces.find((s) => s.id === section);
   const open = (next: string) => replace({ view: "settings", section: next });
+  // A space opens as a step forward: the back button returns to the list.
+  const openSpace = (id: string) => go({ view: "settings", section: id });
   const act = async (fn: () => Promise<unknown>) => {
     try {
       setError(null);
@@ -73,7 +75,7 @@ const Settings: React.FC<Props> = ({ spaces, section = "spaces", onChanged }) =>
       ) : section === "types" ? (
         <PageTypes act={act} />
       ) : (
-        <SpacesList spaces={spaces} act={act} onOpen={open} />
+        <SpacesList spaces={spaces} act={act} onOpen={openSpace} />
       )}
     </div>
   );
@@ -185,6 +187,9 @@ const SpaceSettings: React.FC<{
     });
   return (
     <>
+      <button className="link back-link" onClick={onBack}>
+        <ArrowLeft size={15} /> {t("settings.spaces")}
+      </button>
       <section>
         <SectionTitle icon={space.main ? <Globe size={16} /> : <Users size={16} />}>{space.main ? t("settings.mainSpace") : t("settings.group")}</SectionTitle>
         <div className="ws-row">
@@ -404,8 +409,8 @@ const PageTypeEditor: React.FC<{ type: PageType; run: (fn: () => Promise<unknown
       <section className="wide">
         <SectionTitle icon={<BookOpen size={16} />}>{t("settings.template")}</SectionTitle>
         <p className="hint">{t("settings.templateHint")}</p>
-        <div className="styleguide-editor">
-          <DocEditor docId={templateDoc(type.id)} level={AccessLevel.ADMIN} variant="doc" />
+        <div className="template-editor">
+          <DocEditor docId={templateDoc(type.id)} level={AccessLevel.ADMIN} variant="wiki" />
         </div>
       </section>
     </>

@@ -5,7 +5,6 @@ export const pl: Messages = {
   // App shell
   "app.loadError": "Nie udało się wczytać aplikacji: {error}",
   "app.loading": "Wczytywanie…",
-  "app.myNotifications": "Moje powiadomienia",
   "app.notifications": "Powiadomienia",
   "app.settings": "Ustawienia",
   "app.adminsUnset": "Brak administratora: każdy może zmieniać ustawienia. Wybierz administratorów w ustawieniach aplikacji w Root.",
@@ -248,9 +247,6 @@ export const pl: Messages = {
   "lang.hint": "Pisownia i czytelność są sprawdzane w tym języku.",
 
   // Top bar
-  "nav.moreWorkspaces": "Pokaż pozostałe przestrzenie",
-  "nav.more": { one: "{count} więcej", few: "{count} więcej", many: "{count} więcej", other: "{count} więcej" },
-  "nav.tools": "Wyszukiwanie, zgłoszenia, powiadomienia, ustawienia",
 
   // Access level, shown in the toolbar
   "access.readHint": "Możesz czytać i kopiować ten tekst, ale nie zmieniać go.",
@@ -347,6 +343,14 @@ export const pl: Messages = {
   "read.lastPublished": "Ostatnia publikacja: {date}, {name}.",
   "read.changesWaiting": "Zmiany czekają na publikację.",
   "read.missingLink": "Ta strona jeszcze nie istnieje",
+  "space.allPages": "Wszystkie strony",
+  "space.choose": "Wybierz przestrzeń",
+  "app.more": "Więcej",
+  "all.any": "Wszystkie",
+  "all.sort": "Sortuj",
+  "all.byTitle": "Według tytułu",
+  "all.byDate": "Najnowsze",
+  "all.empty": "Żadna strona nie pasuje do filtrów.",
   "read.edit": "edytuj",
   "read.editSection": "Edytuj sekcję: {section}",
   "read.openPhoto": "Otwórz zdjęcie",

@@ -240,7 +240,7 @@ const WidgetEditor: React.FC<{ widget: Widget; space: Space; categories: Categor
     </label>
     {w.kind === WidgetKind.WIDGET_TEXT && (
       <div className="widget-text editing">
-        <DocEditor docId={widgetDoc(space.id, w.id)} level={AccessLevel.EDIT} variant="doc" compact />
+        <DocEditor docId={widgetDoc(space.id, w.id)} level={AccessLevel.EDIT} variant="field" />
       </div>
     )}
     {(w.kind === WidgetKind.WIDGET_RECENT || w.kind === WidgetKind.WIDGET_LIST) && (

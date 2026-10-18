@@ -2,12 +2,10 @@ import React, { useCallback, useEffect, useState } from "react";
 import { rootClient, ImageUriResolution } from "@rootsdk/client-app";
 import { WikiServiceClientEvent } from "@commons-root/gen-client";
 import { AccessLevel, GetMeResponse, Space } from "@commons-root/gen-shared";
-import { Bell, Flag, Globe, Settings as SettingsIcon, Users } from "lucide-react";
+import { Bell, Flag, Settings as SettingsIcon } from "lucide-react";
 import { setImageUrlResolver } from "./editor/figure";
 import { setFileUrlResolver } from "./editor/attachment";
 import { fixDevHostImageUrl } from "./devHost";
-import TabIcon from "./ui/TabIcon";
-import TopNav from "./ui/TopNav";
 import { NotifyPrefs } from "./notify/NotifySettings";
 import { t } from "./i18n";
 import { readResume, saveResume } from "./ui/resume";
@@ -15,6 +13,7 @@ import { recall, remember } from "./snapshots";
 import { useBusy } from "./ui/busy";
 import { errorText, usePageTypes, wiki } from "./wiki/api";
 import { NavProvider, pageRoute, Route, useNav } from "./wiki/nav";
+import type { BarTool } from "./wiki/TopBar";
 import SpaceView from "./wiki/SpaceView";
 import Reports from "./wiki/Reports";
 import Settings from "./wiki/Settings";
@@ -94,68 +93,59 @@ const Shell: React.FC<{ me: GetMeResponse; spaces: Space[]; onChanged: () => voi
 
   useEffect(() => saveResume({ route }), [JSON.stringify(route)]);
 
-  // Search results show inside a space too, with its bar and main menu.
-  const space =
-    route.view === "space" ? (spaces.find((s) => s.id === route.spaceId) ?? main) : route.view === "search" ? (spaces.find((s) => s.id === route.spaceId) ?? main) : null;
+  // Every view shows inside a space, under the one bar, with its main menu.
+  const space = (route.view === "space" || route.view === "search" ? spaces.find((s) => s.id === route.spaceId) : undefined) ?? main;
 
   // The open space's color, as a light reminder across its pages.
   useEffect(() => {
     const root = document.documentElement;
-    if (space?.color) {
+    if (space.color) {
       root.style.setProperty("--ws-color", space.color);
       root.dataset.wsTint = "";
     } else {
       root.style.removeProperty("--ws-color");
       delete root.dataset.wsTint;
     }
-  }, [space?.id, space?.color]);
+  }, [space.id, space.color]);
+
+  // The bar's tools, at its right end.
+  const tools: BarTool[] = [
+    ...(writes
+      ? [
+          {
+            key: "reports",
+            label: me.openReports ? t("app.reportsCount", { count: me.openReports }) : t("app.reports"),
+            count: me.openReports,
+            icon: <Flag size={16} />,
+            active: route.view === "reports",
+            onSelect: () => go({ view: "reports" }),
+          },
+        ]
+      : []),
+    { key: "notifications", label: t("app.notifications"), icon: <Bell size={16} />, onSelect: () => setShowPrefs(true) },
+    ...(me.isAdmin
+      ? [{ key: "settings", label: t("app.settings"), icon: <SettingsIcon size={16} />, active: route.view === "settings", onSelect: () => go({ view: "settings" }) }]
+      : []),
+  ];
+
+  let content: React.ReactNode = undefined;
+  if (route.view === "reports") content = <Reports spaces={spaces} pageId={route.pageId} onChanged={onChanged} />;
+  else if (route.view === "settings" && me.isAdmin) content = <Settings spaces={spaces} section={route.section} onChanged={onChanged} />;
 
   return (
     <div className="shell">
-      <TopNav
-        workspaces={spaces.map((s) => ({
-          key: s.id,
-          label: s.name,
-          color: s.color || undefined,
-          icon: <TabIcon icon={s.icon} color={s.color} size={15} fallback={s.main ? <Globe size={15} /> : <Users size={15} />} />,
-          active: space?.id === s.id,
-          current: (space ?? main).id === s.id,
-          onSelect: () => go({ view: "space", spaceId: s.id }),
-        }))}
-        tools={[
-          ...(writes
-            ? [
-                {
-                  key: "reports",
-                  label: me.openReports ? t("app.reportsCount", { count: me.openReports }) : t("app.reports"),
-                  icon: <Flag size={15} />,
-                  active: route.view === "reports",
-                  onSelect: () => go({ view: "reports" }),
-                },
-              ]
-            : []),
-          { key: "notifications", label: t("app.notifications"), title: t("app.myNotifications"), icon: <Bell size={15} />, onSelect: () => setShowPrefs(true) },
-          ...(me.isAdmin
-            ? [{ key: "settings", label: t("app.settings"), icon: <SettingsIcon size={15} />, active: route.view === "settings", onSelect: () => go({ view: "settings" }) }]
-            : []),
-        ]}
-      />
       {showPrefs && <NotifyPrefs onClose={() => setShowPrefs(false)} />}
-      {me.adminsUnset && <div className="banner">{t("app.adminsUnset")}</div>}
-      {route.view === "reports" ? (
-        <Reports spaces={spaces} pageId={route.pageId} onChanged={onChanged} />
-      ) : route.view === "settings" && me.isAdmin ? (
-        <Settings spaces={spaces} section={route.section} onChanged={onChanged} />
-      ) : (
-        <SpaceView
-          key={(space ?? main).id}
-          space={space ?? main}
-          spaces={spaces}
-          types={types}
-          at={route.view === "space" && space?.id === route.spaceId ? (route.at ?? { kind: "home" }) : { kind: "home" }}
-          search={route.view === "search" ? { query: route.query, spaceId: route.spaceId } : undefined}
-        />
-      )}
+      <SpaceView
+        key={space.id}
+        space={space}
+        spaces={spaces}
+        types={types}
+        tools={tools}
+        notice={me.adminsUnset ? t("app.adminsUnset") : undefined}
+        at={route.view === "space" && route.spaceId === space.id ? (route.at ?? { kind: "home" }) : { kind: "home" }}
+        search={route.view === "search" ? { query: route.query, spaceId: route.spaceId } : undefined}
+        content={content}
+      />
     </div>
   );
 };
