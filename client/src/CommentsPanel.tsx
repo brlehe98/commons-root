@@ -144,7 +144,7 @@ const CommentsPanel: React.FC<Props> = ({ docId, editor, ydoc, userId, canCommen
           docId={docId}
           quote={draft.quote}
           placeholder={t("comments.addPlaceholder")}
-          submitLabel={t("pitch.comment")}
+          submitLabel={t("comments.send")}
           onCancel={onDraftDone}
           onSubmit={(body, mentions) => {
             addThread(editor, ydoc, userId, draft.from, draft.to, body, mentions);

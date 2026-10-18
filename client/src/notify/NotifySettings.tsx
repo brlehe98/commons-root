@@ -1,11 +1,8 @@
 import { useEffect, useState } from "react";
-import { BellRing, Plus, X } from "lucide-react";
-import SectionTitle from "../ui/SectionTitle";
+import { X } from "lucide-react";
 import "../fields/fields.css";
-import { boardServiceClient, notifyServiceClient } from "@commons-root/gen-client";
-import { Column, NotifyKind, NotifyPref, NotifyRule, RoleAccess, Workspace } from "@commons-root/gen-shared";
-import { BOARD_COLUMNS, PUBLISHED_STAGE } from "../board/columns";
-import { getStage } from "../board/stageColors";
+import { notifyServiceClient } from "@commons-root/gen-client";
+import { NotifyKind, NotifyPref } from "@commons-root/gen-shared";
 import { t } from "../i18n";
 
 const groups = (): { title: string; kinds: { kind: NotifyKind; label: string }[] }[] => [
@@ -24,23 +21,13 @@ const groups = (): { title: string; kinds: { kind: NotifyKind; label: string }[]
     ],
   },
   {
-    title: t("notify.myProjects"),
+    title: t("notify.pages"),
     kinds: [
-      { kind: NotifyKind.COLUMN_CHANGED, label: t("notify.columnChanged") },
-      { kind: NotifyKind.STATUS_CHANGED, label: t("notify.statusChanged") },
-      { kind: NotifyKind.DUE_TOMORROW, label: t("notify.due") },
-    ],
-  },
-  {
-    title: t("notify.myRoles"),
-    kinds: [
-      { kind: NotifyKind.APPROVAL_NEEDED, label: t("notify.approvalNeeded") },
-      { kind: NotifyKind.RULE, label: t("notify.rule") },
+      { kind: NotifyKind.PAGE_UPDATED, label: t("notify.pageUpdated") },
+      { kind: NotifyKind.REPORT, label: t("notify.report") },
     ],
   },
 ];
-
-const stageName = (column: Column, fallback: string) => getStage(column)?.label || fallback;
 
 /** Each member picks which notifications they get. Root cannot mute one app. */
 export function NotifyPrefs({ onClose }: { onClose: () => void }) {
@@ -102,89 +89,5 @@ export function NotifyPrefs({ onClose }: { onClose: () => void }) {
         </footer>
       </div>
     </div>
-  );
-}
-
-/** Admin rules: tell a role when a card enters a column. */
-export function NotifyRules({ workspaces }: { workspaces: Workspace[] }) {
-  const [rules, setRules] = useState<NotifyRule[] | null>(null);
-  const [roles, setRoles] = useState<RoleAccess[]>([]);
-  const [saved, setSaved] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    notifyServiceClient
-      .listRules()
-      .then((r) => setRules(r.rules))
-      .catch((err) => setError(String(err?.message ?? err)));
-    boardServiceClient.getAccess({ workspaceId: "" }).then((r) => setRoles(r.roles)).catch(() => undefined);
-  }, []);
-
-  if (!rules) return null;
-  const update = (i: number, patch: Partial<NotifyRule>) => {
-    setRules(rules.map((r, k) => (k === i ? { ...r, ...patch } : r)));
-    setSaved(false);
-  };
-  const save = () =>
-    notifyServiceClient
-      .saveRules({ rules })
-      .then(() => setSaved(true))
-      .catch((err) => setError(String(err?.message ?? err)));
-
-  return (
-    <section>
-      <SectionTitle icon={<BellRing size={16} />}>{t("notify.rules")}</SectionTitle>
-      <p className="hint">{t("notify.rulesHint")}</p>
-      {error && <p className="field-error">{error}</p>}
-      {rules.map((r, i) => (
-        <div key={i} className="rule-row">
-          <span className="condition-word">{t("notify.tell")}</span>
-          <select value={r.roleId} onChange={(e) => update(i, { roleId: e.target.value })}>
-            <option value="">{t("notify.pickRole")}</option>
-            {roles.map((role) => (
-              <option key={role.roleId} value={role.roleId}>
-                {role.roleName}
-              </option>
-            ))}
-          </select>
-          <span className="condition-word">{t("notify.whenCardOf")}</span>
-          <select value={r.workspaceId} onChange={(e) => update(i, { workspaceId: e.target.value })}>
-            <option value="">{t("notify.anyWorkspace")}</option>
-            {workspaces.map((w) => (
-              <option key={w.id} value={w.id}>
-                {w.name}
-              </option>
-            ))}
-          </select>
-          <span className="condition-word">{t("notify.enters")}</span>
-          <select value={r.column} onChange={(e) => update(i, { column: Number(e.target.value) })}>
-            {[...BOARD_COLUMNS, PUBLISHED_STAGE].map((c) => (
-              <option key={c.column} value={c.column}>
-                {stageName(c.column, c.label)}
-              </option>
-            ))}
-          </select>
-          <button className="icon" title={t("notify.removeRule")} onClick={() => (setRules(rules.filter((_, k) => k !== i)), setSaved(false))}>
-            <X size={15} />
-          </button>
-        </div>
-      ))}
-      {!rules.length && <p className="hint">{t("notify.noRule")}</p>}
-      <div className="section-actions">
-        <button
-          className="with-icon"
-          onClick={() => {
-            setRules([...rules, { id: "", workspaceId: "", column: Column.FOR_REVIEW, roleId: "" }]);
-            setSaved(false);
-          }}
-        >
-          <Plus size={15} /> {t("notify.addRule")}
-        </button>
-        <span className="spacer" />
-        <button className="primary" disabled={saved} onClick={save}>
-          {saved ? t("common.saved") : t("notify.saveRules")}
-        </button>
-      </div>
-    </section>
   );
 }

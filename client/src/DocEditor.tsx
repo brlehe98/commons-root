@@ -21,10 +21,12 @@ type Props = {
   onLanguageChange?: (language: Language | null) => void;
   variant?: "field" | "reader" | "doc";
   emptyText?: string;
+  /** Buttons for the page itself (Publish…), at the end of the toolbar. */
+  actions?: React.ReactNode;
 };
 
 /** Opens a shared document and mounts the editor once its content arrived. */
-const DocEditor: React.FC<Props> = ({ docId, level, compact, language, onLanguageChange, variant, emptyText }) => {
+const DocEditor: React.FC<Props> = ({ docId, level, compact, language, onLanguageChange, variant, emptyText, actions }) => {
   const userId = rootClient.users.getCurrentUserId();
   const [sync, setSync] = useState<DocSync | null>(null);
   const [status, setStatus] = useState<SyncStatus>("connecting");
@@ -87,7 +89,7 @@ const DocEditor: React.FC<Props> = ({ docId, level, compact, language, onLanguag
 
   if (error) return <div className="app-message">{t("doc.openError", { error })}</div>;
   if (!sync) return <div className="app-message">{t("doc.opening")}</div>;
-  const editor = <ArticleEditor key={`${docId}:${reload}`} sync={sync} userId={userId} status={status} level={level} compact={compact} language={language} onLanguageChange={onLanguageChange} variant={variant} emptyText={emptyText} />;
+  const editor = <ArticleEditor key={`${docId}:${reload}`} sync={sync} userId={userId} status={status} level={level} compact={compact} language={language} onLanguageChange={onLanguageChange} variant={variant} emptyText={emptyText} actions={actions} />;
   return refused ? (
     <>
       <div className="banner error" role="alert" onClick={() => setRefused(null)}>

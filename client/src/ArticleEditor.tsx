@@ -2,7 +2,7 @@ import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "re
 import { useEditor, EditorContent, useEditorState } from "@tiptap/react";
 import type { Editor } from "@tiptap/core";
 import { rootClient } from "@rootsdk/client-app";
-import { docServiceClient } from "@commons-root/gen-client";
+import { docServiceClient, wikiServiceClient } from "@commons-root/gen-client";
 import { AccessLevel } from "@commons-root/gen-shared";
 import {
   applySuggestion,
@@ -33,8 +33,10 @@ import {
   ChevronUp,
   Eye,
   ChevronRight,
-  Copy,
+  BookMarked,
   FilePenLine,
+  FileText,
+  Paperclip,
   Pencil,
   PanelRightClose,
   PanelRightOpen,
@@ -59,7 +61,6 @@ import { DocSync, SyncStatus } from "./sync";
 import { undo, redo } from "./editor/collaboration";
 import { buildExtensions } from "./editor/extensions";
 import { listSuggestions, countWords } from "./editor/suggestionList";
-import { copyArticle } from "./editor/copyArticle";
 import { cachedName, colorForUser, loadNames } from "./users";
 import CommentsPanel, { Draft } from "./CommentsPanel";
 import VersionHistory from "./VersionHistory";
@@ -77,6 +78,8 @@ import FormatSheet from "./editor/FormatSheet";
 import { commentDraftKey } from "./editor/commentDraft";
 import { HIGHLIGHTS, TEXT_COLORS } from "./editor/palette";
 import { locale, t } from "./i18n";
+import { formDialog, promptDialog } from "./ui/dialog";
+import type { PageSummary } from "@commons-root/gen-shared";
 
 // variant "reader": the text alone, read-only (the style guide window).
 // variant "doc": a plain shared document (the style guide in Settings):
@@ -95,11 +98,13 @@ type Props = {
   onLanguageChange?: (language: Language | null) => void;
   variant?: "field" | "reader" | "doc";
   emptyText?: string;
+  /** Buttons for the page itself (Publish…), at the end of the toolbar. */
+  actions?: React.ReactNode;
 };
 
 type Peer = { id: string; name: string; color: string };
 
-const ArticleEditor: React.FC<Props> = ({ sync, userId, status, level, compact, language = null, onLanguageChange, variant, emptyText }) => {
+const ArticleEditor: React.FC<Props> = ({ sync, userId, status, level, compact, language = null, onLanguageChange, variant, emptyText, actions }) => {
   const canEdit = level >= AccessLevel.EDIT;
   // Comment level may only suggest; read level only reads.
   const canSuggest = level >= AccessLevel.COMMENT;
@@ -155,6 +160,12 @@ const ArticleEditor: React.FC<Props> = ({ sync, userId, status, level, compact, 
     const dom = editor.view.dom as HTMLElement;
     const onClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
+      const note = target.closest("sup[data-footnote]");
+      if (note && canSuggestRef.current) {
+        const pos = editor.view.posAtDOM(note, 0);
+        if (editor.state.doc.nodeAt(pos)?.type.name === "footnote") editSourceRef.current(pos);
+        return;
+      }
       const id = target.closest("[data-comment]")?.getAttribute("data-comment");
       const suggestion = suggestionIdAt(target);
       if (!id && !suggestion) return;
@@ -166,6 +177,9 @@ const ArticleEditor: React.FC<Props> = ({ sync, userId, status, level, compact, 
     return () => dom.removeEventListener("click", onClick);
   }, [editor, setSideOpen]);
   const mySuggestions = useRef<Set<string> | null>(null);
+  const canSuggestRef = useRef(canSuggest);
+  canSuggestRef.current = canSuggest;
+  const editSourceRef = useRef<(pos: number) => void>(() => undefined);
   const pageRef = useRef<HTMLElement>(null);
 
   const view = useEditorState({
@@ -274,13 +288,40 @@ const ArticleEditor: React.FC<Props> = ({ sync, userId, status, level, compact, 
   };
 
   commentShortcut.current = canSuggest ? startComment : () => undefined;
+  editSourceRef.current = (pos) => void editSource(pos);
 
-  const copy = async () => {
+  /** Adds a source at the cursor, or with `pos` edits the one there. */
+  const editSource = async (pos?: number) => {
+    const node = pos != null ? editor.state.doc.nodeAt(pos) : null;
+    const values = await formDialog(node ? t("source.editTitle") : t("source.addTitle"), [
+      { key: "text", label: t("source.text"), value: (node?.attrs.text as string) ?? "", placeholder: t("source.textHint"), long: true },
+      { key: "url", label: t("source.url"), value: (node?.attrs.url as string) ?? "", placeholder: "https://" },
+    ]);
+    if (!values) return;
+    const text = values.text.trim().slice(0, 1000);
+    const url = cleanUrl(values.url);
+    if (node && pos != null) {
+      if (!text) return editor.chain().focus().setNodeSelection(pos).deleteSelection().run();
+      editor.view.dispatch(editor.state.tr.setNodeMarkup(pos, undefined, { ...node.attrs, text, url }));
+      return;
+    }
+    if (text) editor.chain().focus().insertFootnote({ text, url }).run();
+  };
+
+  /** Attaches a file from Root's file picker. */
+  const attachFile = async () => {
     try {
-      await copyArticle(editor);
-      flash(t("editor.copied"));
+      const { tokens } = await rootClient.assets.fileUpload({ fileType: "all", multiple: false, windowTitle: t("file.addTitle") });
+      if (!tokens?.length) return;
+      flash(t("file.saving"));
+      const { uri } = await docServiceClient.commitPhoto({ token: tokens[0] });
+      const guess = decodeURIComponent(tokens[0].split(/[\\/]/).pop() ?? "").replace(/^[0-9a-f-]{20,}[-_]?/i, "");
+      const name = (await promptDialog(t("file.name"), guess || t("file.default")))?.trim() || guess || t("file.default");
+      editor.chain().focus().insertAttachment({ uri, name: name.slice(0, 200) }).run();
+      flash(t("file.added"));
     } catch (err) {
-      flash(t("editor.copyFailed", { error: String((err as Error)?.message ?? err) }), true);
+      const message = String((err as Error)?.message ?? err);
+      flash(/cancel|timeout|too large|size/i.test(message) ? t("editor.photoTooBig", { max: PHOTO_MAX_MB }) : t("file.failed", { error: message }), true);
     }
   };
 
@@ -331,7 +372,8 @@ const ArticleEditor: React.FC<Props> = ({ sync, userId, status, level, compact, 
           ) : null
         }
         onAddPhoto={() => addPhoto(false)}
-        onCopy={copy}
+        onSource={() => editSource()}
+        onAttach={attachFile}
         onHistory={compact ? undefined : () => setShowHistory(true)}
         onReplacePhoto={() => addPhoto(true)}
         onComment={startComment}
@@ -352,9 +394,7 @@ const ArticleEditor: React.FC<Props> = ({ sync, userId, status, level, compact, 
                 <History size={ICON} />
               </button>
             )}
-            <button className="primary with-icon" onClick={copy} title={t("editor.copyTitle")}>
-              <Copy size={16} /> <span className="label">{t("editor.copy")}</span>
-            </button>
+            {actions}
             <button
               className={sideOpen ? "icon on panel-toggle" : "icon panel-toggle"}
               title={sideOpen ? t("editor.hidePanel") : t("editor.showPanel")}
@@ -527,7 +567,8 @@ type ToolbarProps = {
   onAddPhoto: () => void;
   onReplacePhoto: () => void;
   onComment: () => void;
-  onCopy: () => void;
+  onSource: () => void;
+  onAttach: () => void;
   onHistory?: () => void;
 };
 
@@ -539,7 +580,7 @@ const ALIGNMENTS = [
 ] as const;
 
 /** The single row above the text: mode, formatting, then people and actions. */
-const Toolbar: React.FC<ToolbarProps> = ({ editor, canSuggest, mode, trailing, onAddPhoto, onReplacePhoto, onComment, onCopy, onHistory }) => {
+const Toolbar: React.FC<ToolbarProps> = ({ editor, canSuggest, mode, trailing, onAddPhoto, onReplacePhoto, onComment, onSource, onAttach, onHistory }) => {
   const photo = useEditorState({
     editor,
     selector: ({ editor }) => {
@@ -761,17 +802,7 @@ const Toolbar: React.FC<ToolbarProps> = ({ editor, canSuggest, mode, trailing, o
       <span className="sep" />
       <span className="tb-m-hide tb-contents">
       {linkOpen ? (
-        <form
-          className="link-form"
-          onSubmit={(e) => {
-            e.preventDefault();
-            href ? chain().extendMarkRange("link").setLink({ href }).run() : chain().unsetLink().run();
-            setLinkOpen(false);
-          }}
-        >
-          <input autoFocus placeholder="https://" value={href} onChange={(e) => setHref(e.target.value)} />
-          <button type="submit">OK</button>
-        </form>
+        <LinkForm editor={editor} href={href} setHref={setHref} onDone={() => setLinkOpen(false)} />
       ) : (
         <button
           className="icon"
@@ -807,6 +838,12 @@ const Toolbar: React.FC<ToolbarProps> = ({ editor, canSuggest, mode, trailing, o
           <ImagePlus size={ICON} />
         </button>
       )}
+      <button className="icon" title={t("source.add")} onClick={onSource}>
+        <BookMarked size={ICON} />
+      </button>
+      <button className="icon" title={t("file.add")} onClick={onAttach}>
+        <Paperclip size={ICON} />
+      </button>
       <span className="sep" />
       </span>
       <button className="icon tb-sheet" title={t("editor.moreFormatting")} onMouseDown={(e) => e.preventDefault()} onClick={() => setSheet(true)}>
@@ -817,8 +854,77 @@ const Toolbar: React.FC<ToolbarProps> = ({ editor, canSuggest, mode, trailing, o
       </button>
       </div>
       <div className="tb-side">{trailing}</div>
-      {sheet && <FormatSheet editor={editor} onClose={() => setSheet(false)} onAddPhoto={onAddPhoto} onCopy={onCopy} onHistory={onHistory} />}
+      {sheet && <FormatSheet editor={editor} onClose={() => setSheet(false)} onAddPhoto={onAddPhoto} onSource={onSource} onAttach={onAttach} onHistory={onHistory} />}
     </div>
+  );
+};
+
+/** "example.org" becomes "https://example.org"; anything not a web address is dropped. */
+function cleanUrl(value: string): string {
+  const v = value.trim();
+  if (!v) return "";
+  const url = /^[a-z]+:/i.test(v) ? v : `https://${v}`;
+  return /^https?:\/\/[^\s]+$/i.test(url) ? url.slice(0, 500) : "";
+}
+
+/** The page an internal link points to, as stored in the text. */
+export const pageHref = (pageId: string) => `#/page/${pageId}`;
+
+/**
+ * Links to a web address, or to another page of the knowledge base: typing
+ * words instead of an address lists the pages whose title matches.
+ */
+const LinkForm: React.FC<{ editor: Editor; href: string; setHref: (v: string) => void; onDone: () => void }> = ({ editor, href, setHref, onDone }) => {
+  const [pages, setPages] = useState<PageSummary[]>([]);
+  const isAddress = /^(https?:|www\.|#|mailto:)/i.test(href.trim()) || /^[^\s]+\.[a-z]{2,}(\/|$)/i.test(href.trim());
+  useEffect(() => {
+    const q = href.trim();
+    if (q.length < 2 || isAddress) return setPages([]);
+    const timer = window.setTimeout(() => {
+      wikiServiceClient
+        .findPages({ query: q })
+        .then((r) => setPages(r.pages))
+        .catch(() => setPages([]));
+    }, 250);
+    return () => window.clearTimeout(timer);
+  }, [href, isAddress]);
+  const link = (target: string, title?: string) => {
+    const { empty } = editor.state.selection;
+    if (empty && title) editor.chain().focus().insertContent({ type: "text", text: title, marks: [{ type: "link", attrs: { href: target } }] }).run();
+    else editor.chain().focus().extendMarkRange("link").setLink({ href: target }).run();
+    onDone();
+  };
+  return (
+    <form
+      className="link-form"
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (!href.trim()) {
+          editor.chain().focus().unsetLink().run();
+          return onDone();
+        }
+        if (!isAddress && pages[0]) return link(pageHref(pages[0].id), pages[0].title);
+        const url = href.startsWith("#") ? href.trim() : cleanUrl(href);
+        if (url) link(url);
+        else onDone();
+      }}
+    >
+      <input autoFocus placeholder={t("link.placeholder")} value={href} onChange={(e) => setHref(e.target.value)} onKeyDown={(e) => e.key === "Escape" && onDone()} />
+      <button type="submit">OK</button>
+      {pages.length > 0 && (
+        <div className="menu-pop link-pages" role="listbox">
+          {pages.map((p) => (
+            <button key={p.id} type="button" className="menu-item" onMouseDown={(e) => e.preventDefault()} onClick={() => link(pageHref(p.id), p.title)}>
+              <span className="menu-icon">
+                <FileText size={15} />
+              </span>
+              <span className="menu-label">{p.title}</span>
+              {p.draftOnly && <span className="menu-hint">{t("page.draft")}</span>}
+            </button>
+          ))}
+        </div>
+      )}
+    </form>
   );
 };
 

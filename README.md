@@ -1,21 +1,25 @@
-# newsroom-root
+# Commons
 
-App éditoriale pour Root : espaces de travail, tableau du pitch à la publication, éditeur collaboratif, archive. Étapes 1 à 6 du cahier des charges.
+Base de connaissances pour une communauté Root : guides, outils, références, ressources. Pensée pour être complémentaire à Newsroom, mais réglable pour n'importe quelle communauté (espaces, rôles, types de page, accueil).
 
 ## Ce que contient l'app
 
-- **Espaces et accès** : un onglet par espace, niveau d'accès par rôle Root (Invisible, Read, Comment, Edit, Admin). Admins de l'app choisis dans les réglages Root.
-- **Tableau** : Planned, In progress, For review, Awaiting publication, zone Published. Glisser-déposer, bouton Start, plusieurs auteurs par article.
-- **Fiche projet** : pitch, onglets de texte (langue, corbeille), champs et statuts.
-- **Écriture en direct** : Yjs relayé par le serveur et les diffusions Root, frappes regroupées toutes les 200 ms, messages découpés au-delà de 200 Ko (limite Root : 256 Kio). Curseurs et noms des présents.
-- **Mode suggestion** : couleur et nom par auteur, accepter ou refuser une suggestion ou toutes.
-- **Commentaires** : sur un passage, réponses, mentions @, Resolve et Reopen. Les fils vivent dans le document Yjs.
-- **Historique** : version automatique toutes les 10 minutes d'écriture, versions nommées, comparaison mot à mot, restauration (annulable).
-- **Compteurs** : mots de l'onglet et de la sélection, lisibilité (Flesch en anglais, Kandel et Moles en français).
-- **Photos** : sélecteur de fichiers Root, légende sous la photo. **Copy article** copie le texte propre pour Word.
-- **Champs et statuts** : bibliothèque commune (texte ou liste), icône Lucide et couleur, colonnes, affichage sur la carte, rôle qui remplit, approbations qui bloquent une colonne.
-- **Notifications Root** : mentions, commentaires, suggestions, changements de colonne et de statut, approbations, veille de la date limite, règles par rôle. Jamais pour son propre geste, une seule notification par rafale, préférences par membre (cloche).
-- **Archive** : par date de publication, filtres (espace, auteur, période, champs) et recherche dans les titres et les textes, en lecture seule. Un admin peut ramener un article au tableau pendant `retention.archiveDays` jours (90 par défaut) ; ensuite l'archive définitive élague l'historique et compresse les textes.
+- **Espaces** : un espace principal lu par toute la communauté, et des groupes créés à partir d'un rôle Root, visibles par tous ou cachés. Niveau par rôle : Invisible, Read, Suggest and comment, Edit and publish, Admin. Admins de l'app choisis dans les réglages Root.
+- **Pages façon Wikipédia** : onglets Read / Edit (ou Suggest changes) / History, infobox des champs du type, sommaire, sources en notes numérotées et liste References, catégories et étiquettes en bas de page, « What links here », liens rouges vers les pages qui n'existent pas.
+- **Brouillon et publication** : on écrit dans un brouillon partagé (écriture en direct, mode suggestion, commentaires, historique des versions) ; les lecteurs voient la dernière version publiée jusqu'à la prochaine publication. Chaque publication est gardée (onglet History).
+- **Contribution de la communauté**, par page : éditeurs seulement (par défaut), suggestions des membres, ou édition du brouillon par les membres (un éditeur publie).
+- **Types de page** réglables (Guide, Tool, Reference, Resource, Page au départ) : champs de l'infobox (texte, lien, nombre, date, liste, image) et texte de départ.
+- **Catégories** en arbre, **étiquettes**, **brouillons**, **traductions** liées (une page par langue), déplacement d'une page vers un autre espace.
+- **Accueil** de chaque espace en blocs : texte, recherche, pages en vedette, dernières mises à jour, liste d'une catégorie ou d'une étiquette, liens utiles.
+- **Recherche** plein texte (SQLite FTS5) avec filtres espace, catégorie, type, étiquette.
+- **Signalements** : « Report an error or suggest an addition » sur chaque page ; liste des signalements pour les éditeurs.
+- **Notifications Root** : mentions, commentaires, suggestions, page ou catégorie suivie republiée, signalement dans un espace qu'on édite. Préférences par membre.
+- **Fichiers** : photos avec légende et fichiers joints (PDF, etc.) dans le texte.
+- Interface dans les 8 langues de Root, lisibilité et correcteur orthographique repris de Newsroom.
+
+## Avant le premier lancement
+
+Créer l'app **Commons** dans le Root Developer Portal et coller son identifiant dans `root-manifest.json` (champ `id`, à la place de `COMMONS_APP_ID`). Ne pas réutiliser l'identifiant de Newsroom : les deux apps se remplaceraient.
 
 ## Lancer en local
 
@@ -47,7 +51,7 @@ Le DevHost ajoute une barre en haut du client pour choisir le membre. Ouvre plus
 cd client && npm test
 ```
 
-Les tests font tourner deux éditeurs synchronisés et vérifient les suggestions de texte, les changements de structure (titre) et les photos.
+Les tests font tourner deux éditeurs synchronisés et vérifient les suggestions de texte, les changements de structure (titre), les photos et la conversion d'un brouillon en page publiée.
 
 ## Le correctif de y-prosemirror
 
@@ -57,6 +61,5 @@ y-prosemirror 1.3.7 ne synchronise pas les marques posées sur un bloc entier. S
 
 - prosemirror-suggest-changes 0.1.8 plante quand on refuse une suggestion de structure posée sur un bloc qui contient déjà une suggestion de texte.
 - Le serveur ne peut pas vérifier qu'un membre de niveau Comment n'envoie que des suggestions : l'éditeur l'impose.
-- Réglages Root de type nombre : le DevHost plante dessus, d'où des réglages texte (`trashDays`, `archiveDays`).
-- Les filtres par champ de l'archive demandent de choisir un espace.
+- Le filtre par catégorie de la recherche demande de choisir un espace.
 - Un texte tapé juste à côté d'une suggestion peut être rattaché à cette suggestion et à son auteur.

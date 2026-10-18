@@ -12,6 +12,7 @@ import "@fontsource-variable/frank-ruhl-libre";
 import "@fontsource-variable/outfit";
 import "./styles.css";
 import "./design.css";
+import "./wiki/wiki.css";
 
 applyToDocument();
 

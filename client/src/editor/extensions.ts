@@ -4,6 +4,8 @@ import { BulletList, OrderedList, ListItem } from "@tiptap/extension-list";
 import { Insertion, Deletion, Modification, SuggestChanges, SUGGESTION_MARKS } from "./suggestions";
 import { Collaboration } from "./collaboration";
 import { Figure } from "./figure";
+import { Footnote } from "./footnote";
+import { Attachment } from "./attachment";
 import TextAlign from "@tiptap/extension-text-align";
 import Blockquote from "@tiptap/extension-blockquote";
 import Highlight from "@tiptap/extension-highlight";
@@ -16,8 +18,8 @@ import { PasteColors } from "./pasteColors";
 import { SpellCheck } from "./spellcheck/plugin";
 import type { DocSync } from "../sync";
 
-/** `spellcheck`: underline mistakes (the app turns it on; tests leave it off). */
-export function buildExtensions(sync: DocSync, userId: string, { spellcheck = false } = {}) {
+/** The schema every text shares: the draft, its publication and its history. */
+function baseExtensions() {
   return [
     StarterKit.configure({
       document: false,
@@ -42,9 +44,18 @@ export function buildExtensions(sync: DocSync, userId: string, { spellcheck = fa
     Color,
     PasteColors,
     Figure,
+    Footnote,
+    Attachment,
     TextAlign.configure({ types: ["heading", "paragraph"], alignments: ["left", "center", "right", "justify"] }),
     Indent,
     Surtitle,
+  ];
+}
+
+/** `spellcheck`: underline mistakes (the app turns it on; tests leave it off). */
+export function buildExtensions(sync: DocSync, userId: string, { spellcheck = false } = {}) {
+  return [
+    ...baseExtensions(),
     Insertion,
     Deletion,
     Modification,
@@ -54,4 +65,10 @@ export function buildExtensions(sync: DocSync, userId: string, { spellcheck = fa
     Collaboration.configure({ sync }),
     ...(spellcheck ? [SpellCheck] : []),
   ];
+}
+
+/** A published page: the same nodes, read-only, without comments or suggestions. */
+export function buildReadExtensions() {
+  // The block containers name the suggestion marks, so the schema needs them.
+  return [...baseExtensions(), Insertion, Deletion, Modification];
 }

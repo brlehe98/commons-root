@@ -28,7 +28,7 @@ describe("interface language", () => {
     expect(t("due.inDays", { count: 3 })).toBe("In 3 days");
     setLocale("fr-CA");
     expect(t("due.inDays", { count: 3 })).toBe("Dans 3 jours");
-    expect(t("board.cantGo", { title: "Budget", stage: "En révision" })).toBe("« Budget » ne peut pas passer à En révision.");
+    expect(t("search.count", { count: 2 })).toBe("2 résultats");
     expect(document.documentElement.lang).toBe("fr-CA");
   });
 

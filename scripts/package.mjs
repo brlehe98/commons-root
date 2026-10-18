@@ -8,6 +8,10 @@ import path from "node:path";
 const root = path.resolve(import.meta.dirname, "..");
 const stage = path.join(root, ".package");
 const manifest = JSON.parse(fs.readFileSync(path.join(root, "root-manifest.json"), "utf8"));
+if (!/^[A-Za-z0-9_-]{10,}$/.test(manifest.id) || manifest.id === "COMMONS_APP_ID") {
+  console.error("Set the app id from the Root Developer Portal in root-manifest.json first.");
+  process.exit(1);
+}
 const run = (cmd, cwd = root) => execSync(cmd, { cwd, stdio: "inherit" });
 const installedVersion = (name) =>
   JSON.parse(fs.readFileSync(path.join(root, "node_modules", name, "package.json"), "utf8")).version;

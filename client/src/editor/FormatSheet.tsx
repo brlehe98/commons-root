@@ -8,7 +8,8 @@ import {
   AlignJustify,
   AlignLeft,
   AlignRight,
-  Copy,
+  BookMarked,
+  Paperclip,
   History,
   ImagePlus,
   IndentDecrease,
@@ -32,7 +33,8 @@ type Props = {
   editor: Editor;
   onClose: () => void;
   onAddPhoto: () => void;
-  onCopy: () => void;
+  onSource: () => void;
+  onAttach: () => void;
   onHistory?: () => void;
 };
 
@@ -44,7 +46,7 @@ const ALIGN = [
 ] as const;
 
 /** Phone: every tool the one-line toolbar leaves out, as big buttons in a sheet from the bottom. */
-const FormatSheet: React.FC<Props> = ({ editor, onClose, onAddPhoto, onCopy, onHistory }) => {
+const FormatSheet: React.FC<Props> = ({ editor, onClose, onAddPhoto, onSource, onAttach, onHistory }) => {
   const a = useEditorState({
     editor,
     selector: ({ editor }) => ({
@@ -164,9 +166,13 @@ const FormatSheet: React.FC<Props> = ({ editor, onClose, onAddPhoto, onCopy, onH
               onClose();
               onHistory();
             })}
-          {tool(t("editor.copy"), <Copy size={20} />, false, () => {
+          {tool(t("source.add"), <BookMarked size={20} />, false, () => {
             onClose();
-            onCopy();
+            onSource();
+          })}
+          {tool(t("file.add"), <Paperclip size={20} />, false, () => {
+            onClose();
+            onAttach();
           })}
         </div>
       </div>
