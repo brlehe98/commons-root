@@ -473,7 +473,7 @@ const ArticleEditor: React.FC<Props> = ({
           {emptyText && view.empty && <p className="hint empty-doc">{emptyText}</p>}
           <EditorContent editor={editor} className="article" hidden={!!emptyText && view.empty} />
           {after?.({ editor, editSource: (pos) => void editSource(pos) })}
-          {canSuggest && !draft && <FloatingComment editor={editor} pageRef={pageRef} onComment={startComment} />}
+          {canSuggest && !draft && <FloatingComment editor={editor} pageRef={pageRef} onComment={startComment} above={variant === "wiki"} />}
           <footer className="counts">
             <span className="counts-text">
             {t("editor.words", { count: view.words })}{view.selectedWords ? ` · ${t("editor.selected", { count: view.selectedWords })}` : ""}
@@ -989,10 +989,11 @@ const LinkForm: React.FC<{ editor: Editor; href: string; setHref: (v: string) =>
 };
 
 /** A comment button in the paper's right margin, level with the selected text. */
-const FloatingComment: React.FC<{ editor: Editor; pageRef: React.RefObject<HTMLElement>; onComment: () => void }> = ({
+const FloatingComment: React.FC<{ editor: Editor; pageRef: React.RefObject<HTMLElement>; onComment: () => void; above?: boolean }> = ({
   editor,
   pageRef,
   onComment,
+  above,
 }) => {
   const sel = useEditorState({
     editor,
@@ -1003,19 +1004,34 @@ const FloatingComment: React.FC<{ editor: Editor; pageRef: React.RefObject<HTMLE
   });
   const page = pageRef.current;
   if (!sel.show || !page) return null;
-  let top: number;
+  let start: { top: number };
+  let end: { top: number; left: number };
   try {
-    top = editor.view.coordsAtPos(sel.from).top;
+    start = editor.view.coordsAtPos(sel.from);
+    end = editor.view.coordsAtPos(sel.to);
   } catch {
     return null;
   }
   const pageBox = page.getBoundingClientRect();
   const paperBox = (editor.view.dom as HTMLElement).getBoundingClientRect();
+  let top = start.top - 4;
+  let left = paperBox.right - 46;
+  if (above) {
+    // The text runs to the edge here: the button sits above the end of the
+    // selection, never over the infobox floated beside the text.
+    top = end.top - 40;
+    let right = paperBox.right;
+    page.querySelectorAll(".infobox").forEach((box) => {
+      const r = box.getBoundingClientRect();
+      if (top < r.bottom && end.top + 20 > r.top) right = Math.min(right, r.left - 8);
+    });
+    left = Math.max(paperBox.left, Math.min(end.left - 17, right - 34));
+  }
   return (
     <button
       className="floating-comment"
       title={t("editor.commentKey")}
-      style={{ top: top - pageBox.top + page.scrollTop - 4, left: paperBox.right - pageBox.left + page.scrollLeft - 46 }}
+      style={{ top: top - pageBox.top + page.scrollTop, left: left - pageBox.left + page.scrollLeft }}
       // Keep the selection: the click must not take focus from the text.
       onMouseDown={(e) => e.preventDefault()}
       onClick={onComment}

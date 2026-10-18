@@ -506,3 +506,6 @@ a.catlinks-label { color: var(--link); }
 .dialog-field > span { font-size: 13px; font-weight: 600; color: var(--muted); }
 .dialog-field input, .dialog-field select, .dialog-field textarea { width: 100%; box-sizing: border-box; }
 .dialog-field textarea { resize: vertical; }
+
+/* The infobox takes its own clicks: the text beside it must not cover it. */
+.layout.wiki .infobox { position: relative; z-index: 1; }
