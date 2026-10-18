@@ -19,7 +19,7 @@ Base de connaissances pour une communauté Root : guides, outils, références, 
 
 ## Avant le premier lancement
 
-Créer l'app **Commons** dans le Root Developer Portal et coller son identifiant dans `root-manifest.json` (champ `id`, à la place de `COMMONS_APP_ID`). Ne pas réutiliser l'identifiant de Newsroom : les deux apps se remplaceraient.
+L'identifiant de l'app Commons du Root Developer Portal est dans `root-manifest.json` (champ `id`). Ne pas réutiliser l'identifiant de Newsroom : les deux apps se remplaceraient.
 
 ## Lancer en local
 
