@@ -86,6 +86,9 @@ import type { PageSummary } from "@commons-root/gen-shared";
 // formatting only, no comments, suggestions, copy or side panel.
 // variant "field": a small formatted text box (a long answer in a pitch form),
 // without side panel, counts or article actions.
+// variant "wiki": a page of the knowledge base edited in place: no paper
+// sheet, the page's own typography, the toolbar stuck to the top while the
+// page scrolls; `before` and `after` sit above and under the text.
 // language: the text's language when chosen on its tab (null: detected);
 // onLanguageChange offers the choice under the text.
 type Props = {
@@ -96,15 +99,40 @@ type Props = {
   compact?: boolean;
   language?: Language | null;
   onLanguageChange?: (language: Language | null) => void;
-  variant?: "field" | "reader" | "doc";
+  variant?: "field" | "reader" | "doc" | "wiki";
   emptyText?: string;
   /** Buttons for the page itself (Publish…), at the end of the toolbar. */
   actions?: React.ReactNode;
+  /** Shown before the text, in the same flow (an infobox floated beside it). */
+  before?: React.ReactNode;
+  /** Shown under the text, with what it needs to act on it (live references…). */
+  after?: (tools: EditorTools) => React.ReactNode;
+  /** Opens the text at a heading: the one with this text, else the nth. */
+  focus?: { index: number; text: string } | null;
+  /** The editor, once ready, for views outside the text (the contents). */
+  onEditor?: (editor: Editor | null) => void;
 };
+
+export type EditorTools = { editor: Editor; editSource: (pos?: number) => void };
 
 type Peer = { id: string; name: string; color: string };
 
-const ArticleEditor: React.FC<Props> = ({ sync, userId, status, level, compact, language = null, onLanguageChange, variant, emptyText, actions }) => {
+const ArticleEditor: React.FC<Props> = ({
+  sync,
+  userId,
+  status,
+  level,
+  compact,
+  language = null,
+  onLanguageChange,
+  variant,
+  emptyText,
+  actions,
+  before,
+  after,
+  focus,
+  onEditor,
+}) => {
   const canEdit = level >= AccessLevel.EDIT;
   // Comment level may only suggest; read level only reads.
   const canSuggest = level >= AccessLevel.COMMENT;
@@ -148,7 +176,8 @@ const ArticleEditor: React.FC<Props> = ({ sync, userId, status, level, compact, 
       editor.off("selectionUpdate", onSelect);
     };
   }, [draft, editor]);
-  const [sideOpen, setSideOpen] = usePanel("commons.sidePanel");
+  // A wiki page keeps the text's width: its panel starts closed.
+  const [sideOpen, setSideOpen] = usePanel(variant === "wiki" ? "commons.pagePanel" : "commons.sidePanel", variant !== "wiki");
   const [showHistory, setShowHistory] = useState(false);
   // On a phone the panel covers the text: the back button closes it.
   useBackButton(sideOpen && isNarrow(), () => setSideOpen(false));
@@ -196,8 +225,8 @@ const ArticleEditor: React.FC<Props> = ({ sync, userId, status, level, compact, 
         // Nothing at all, not even a photo: one empty paragraph.
         empty: doc.childCount === 1 && doc.firstChild!.content.size === 0,
         selectedWords: selection.empty ? 0 : countWords(doc, selection.from, selection.to),
-        // Readability is measured on articles, not in small form fields.
-        text: variant ? "" : doc.textBetween(0, doc.content.size, "\n", " "),
+        // Readability is measured on articles and pages, not in small form fields.
+        text: variant && variant !== "wiki" ? "" : doc.textBetween(0, doc.content.size, "\n", " "),
       };
     },
   });
@@ -205,6 +234,35 @@ const ArticleEditor: React.FC<Props> = ({ sync, userId, status, level, compact, 
   useEffect(() => {
     if (view) loadNames(view.suggestions.map((s) => s.author)).catch(() => undefined);
   }, [view?.suggestions.length]);
+
+  useEffect(() => {
+    if (!editor || !onEditor) return;
+    onEditor(editor);
+    return () => onEditor(null);
+  }, [editor, onEditor]);
+
+  // A section's [edit] link: the cursor goes to the end of its heading, in view.
+  useEffect(() => {
+    if (!editor || editor.isDestroyed || !focus) return;
+    const timer = window.setTimeout(() => {
+      let byText = -1;
+      let byIndex = -1;
+      let n = 0;
+      editor.state.doc.descendants((node, pos) => {
+        if (node.type.name !== "heading") return true;
+        if (byText < 0 && node.textContent.trim() === focus.text) byText = pos;
+        if (n++ === focus.index) byIndex = pos;
+        return false;
+      });
+      const pos = byText >= 0 ? byText : byIndex;
+      if (pos < 0) return;
+      const node = editor.state.doc.nodeAt(pos);
+      if (!node) return;
+      editor.chain().setTextSelection(pos + node.nodeSize - 1).focus(undefined, { scrollIntoView: false }).run();
+      (editor.view.nodeDOM(pos) as HTMLElement | null)?.scrollIntoView({ block: "start" });
+    }, 60);
+    return () => window.clearTimeout(timer);
+  }, [editor, focus?.index, focus?.text]);
 
   // After the panel opens, bring the clicked suggestion to the middle of it.
   useEffect(() => {
@@ -410,9 +468,11 @@ const ArticleEditor: React.FC<Props> = ({ sync, userId, status, level, compact, 
       <div className="workspace" style={{ position: "relative" }}>
         {showHistory && <VersionHistory docId={sync.docId} editor={editor} level={level} onClose={() => setShowHistory(false)} />}
         <main className="page" ref={pageRef}>
+          {before}
           {/* The editor stays mounted so the text still syncs in while it is empty. */}
           {emptyText && view.empty && <p className="hint empty-doc">{emptyText}</p>}
           <EditorContent editor={editor} className="article" hidden={!!emptyText && view.empty} />
+          {after?.({ editor, editSource: (pos) => void editSource(pos) })}
           {canSuggest && !draft && <FloatingComment editor={editor} pageRef={pageRef} onComment={startComment} />}
           <footer className="counts">
             <span className="counts-text">

@@ -133,9 +133,15 @@ export function cleanValues(values: FieldValue[], type: PageType | undefined): F
       case FieldKind.FIELD_CHOICE:
         if (!def.options.includes(value)) continue;
         break;
-      case FieldKind.FIELD_IMAGE:
-        if (!/^root:\/\/[^\s"'<>\\]{1,400}$/.test(value)) continue;
+      case FieldKind.FIELD_IMAGE: {
+        // The photo's address, then its caption on a line of its own.
+        const at = value.indexOf("\n");
+        const uri = (at < 0 ? value : value.slice(0, at)).trim();
+        if (!/^root:\/\/[^\s"'<>\\]{1,400}$/.test(uri)) continue;
+        const caption = at < 0 ? "" : value.slice(at + 1).replace(/[\u0000-\u001f\u007f]+/g, " ").trim().slice(0, 300);
+        value = caption ? `${uri}\n${caption}` : uri;
         break;
+      }
     }
     out.push({ fieldId: def.id, value });
   }

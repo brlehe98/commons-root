@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { rootClient, ImageUriResolution } from "@rootsdk/client-app";
 import { WikiServiceClientEvent } from "@commons-root/gen-client";
 import { AccessLevel, GetMeResponse, Space } from "@commons-root/gen-shared";
-import { Bell, Flag, Globe, Search as SearchIcon, Settings as SettingsIcon, Users } from "lucide-react";
+import { Bell, Flag, Globe, Settings as SettingsIcon, Users } from "lucide-react";
 import { setImageUrlResolver } from "./editor/figure";
 import { setFileUrlResolver } from "./editor/attachment";
 import { fixDevHostImageUrl } from "./devHost";
@@ -16,7 +16,6 @@ import { useBusy } from "./ui/busy";
 import { errorText, usePageTypes, wiki } from "./wiki/api";
 import { NavProvider, pageRoute, Route, useNav } from "./wiki/nav";
 import SpaceView from "./wiki/SpaceView";
-import Search from "./wiki/Search";
 import Reports from "./wiki/Reports";
 import Settings from "./wiki/Settings";
 
@@ -95,7 +94,9 @@ const Shell: React.FC<{ me: GetMeResponse; spaces: Space[]; onChanged: () => voi
 
   useEffect(() => saveResume({ route }), [JSON.stringify(route)]);
 
-  const space = route.view === "space" ? (spaces.find((s) => s.id === route.spaceId) ?? main) : null;
+  // Search results show inside a space too, with its bar and main menu.
+  const space =
+    route.view === "space" ? (spaces.find((s) => s.id === route.spaceId) ?? main) : route.view === "search" ? (spaces.find((s) => s.id === route.spaceId) ?? main) : null;
 
   // The open space's color, as a light reminder across its pages.
   useEffect(() => {
@@ -122,13 +123,6 @@ const Shell: React.FC<{ me: GetMeResponse; spaces: Space[]; onChanged: () => voi
           onSelect: () => go({ view: "space", spaceId: s.id }),
         }))}
         tools={[
-          {
-            key: "search",
-            label: t("app.search"),
-            icon: <SearchIcon size={15} />,
-            active: route.view === "search",
-            onSelect: () => go({ view: "search", query: "", spaceId: space && !space.main ? space.id : undefined }),
-          },
           ...(writes
             ? [
                 {
@@ -148,9 +142,7 @@ const Shell: React.FC<{ me: GetMeResponse; spaces: Space[]; onChanged: () => voi
       />
       {showPrefs && <NotifyPrefs onClose={() => setShowPrefs(false)} />}
       {me.adminsUnset && <div className="banner">{t("app.adminsUnset")}</div>}
-      {route.view === "search" ? (
-        <Search query={route.query} spaceId={route.spaceId} spaces={spaces} types={types} />
-      ) : route.view === "reports" ? (
+      {route.view === "reports" ? (
         <Reports spaces={spaces} pageId={route.pageId} onChanged={onChanged} />
       ) : route.view === "settings" && me.isAdmin ? (
         <Settings spaces={spaces} section={route.section} onChanged={onChanged} />
@@ -161,6 +153,7 @@ const Shell: React.FC<{ me: GetMeResponse; spaces: Space[]; onChanged: () => voi
           spaces={spaces}
           types={types}
           at={route.view === "space" && space?.id === route.spaceId ? (route.at ?? { kind: "home" }) : { kind: "home" }}
+          search={route.view === "search" ? { query: route.query, spaceId: route.spaceId } : undefined}
         />
       )}
     </div>

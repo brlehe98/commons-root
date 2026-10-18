@@ -1,5 +1,22 @@
 import React, { useState } from "react";
-import { Bell, BellOff, ChevronDown, ChevronRight, FilePen, FolderPlus, Hash, Home as HomeIcon, Pencil, Plus, Trash2, FolderInput } from "lucide-react";
+import {
+  Bell,
+  BellOff,
+  ChevronDown,
+  ChevronRight,
+  Clock,
+  Dices,
+  FilePen,
+  FolderPlus,
+  Hash,
+  Home as HomeIcon,
+  Menu as MenuIcon,
+  Pencil,
+  Plus,
+  Trash2,
+  FolderInput,
+  X,
+} from "lucide-react";
 import { AccessLevel, Category, PageType, Space } from "@commons-root/gen-shared";
 import { confirmDialog, formDialog, promptDialog } from "../ui/dialog";
 import Menu from "../ui/Menu";
@@ -8,12 +25,44 @@ import { NavLink, pageRoute, SpaceAt, useNav } from "./nav";
 import Home from "./Home";
 import PageView from "./PageView";
 import PageList from "./PageList";
+import SearchBox from "./SearchBox";
+import Search from "./Search";
+import { useBackButton } from "../ui/backButton";
 import { t } from "../i18n";
 
-type Props = { space: Space; spaces: Space[]; types: PageType[]; at: SpaceAt };
+type Props = { space: Space; spaces: Space[]; types: PageType[]; at: SpaceAt; search?: { query: string; spaceId?: string } };
 
-/** A space: its categories on the side, and the home page, a page or a list in the middle. */
-const SpaceView: React.FC<Props> = ({ space, spaces, types, at }) => {
+const MENU_KEY = "commons.menuPinned";
+const narrow = () => window.matchMedia("(max-width: 920px)").matches;
+
+/** Whether the main menu stays beside the page on wide screens (it opens over the page on narrow ones). */
+function useMenuPinned(): [boolean, (pinned: boolean) => void] {
+  const [pinned, setPinned] = useState(() => {
+    try {
+      return localStorage.getItem(MENU_KEY) !== "0";
+    } catch {
+      return true;
+    }
+  });
+  return [
+    pinned,
+    (next) => {
+      setPinned(next);
+      try {
+        localStorage.setItem(MENU_KEY, next ? "1" : "0");
+      } catch {
+        // Private window: the choice lasts until the page closes.
+      }
+    },
+  ];
+}
+
+/**
+ * A space, laid out as Wikipedia: a bar with the main menu button and the
+ * search, the main menu on the side (categories, recent changes…), and the
+ * home page, a page or a list in the middle.
+ */
+const SpaceView: React.FC<Props> = ({ space, spaces, types, at, search }) => {
   const { go } = useNav();
   const { value: categories = [], reload } = useLoaded(`categories:${space.id}`, () => wiki.listCategories({ spaceId: space.id }).then((r) => r.categories), {
     spaceId: space.id,
@@ -22,6 +71,21 @@ const SpaceView: React.FC<Props> = ({ space, spaces, types, at }) => {
   const canEdit = space.level >= AccessLevel.EDIT;
   const canSuggest = space.level >= AccessLevel.COMMENT;
   const [sideOpen, setSideOpen] = useState(false);
+  const [pinned, setPinned] = useMenuPinned();
+  useBackButton(sideOpen, () => setSideOpen(false));
+  const toggleMenu = () => (narrow() ? setSideOpen(!sideOpen) : setPinned(!pinned));
+
+  const randomPage = async () => {
+    setSideOpen(false);
+    try {
+      const { pages } = await wiki.listPages({ spaceId: space.id, categoryId: "", deep: false, tag: "", typeId: "", drafts: false, recent: false, limit: 0 });
+      const list = pages.filter((p) => p.publishedAt > 0n);
+      if (!list.length) return setProblem(t("space.noPages"));
+      go(pageRoute(space.id, list[Math.floor(Math.random() * list.length)].id));
+    } catch (err) {
+      setProblem(errorText(err));
+    }
+  };
 
   const newPage = async (categoryId = at.kind === "category" ? at.categoryId : "") => {
     const answer = await formDialog(
@@ -62,15 +126,22 @@ const SpaceView: React.FC<Props> = ({ space, spaces, types, at }) => {
   };
 
   const side = (
-    <aside className={sideOpen ? "space-side open" : "space-side"} onClick={(e) => (e.target as HTMLElement).closest("a") && setSideOpen(false)}>
-      <NavLink className={at.kind === "home" ? "side-link on" : "side-link"} to={{ view: "space", spaceId: space.id }}>
+    <aside className={sideOpen ? "space-side open" : "space-side"} aria-label={t("space.mainMenu")} onClick={(e) => (e.target as HTMLElement).closest("a") && setSideOpen(false)}>
+      <div className="side-top">
+        {t("space.mainMenu")}
+        <button className="icon" title={t("common.close")} onClick={() => setSideOpen(false)}>
+          <X size={16} />
+        </button>
+      </div>
+      <NavLink className={at.kind === "home" && !search ? "side-link on" : "side-link"} to={{ view: "space", spaceId: space.id }}>
         <HomeIcon size={15} /> {t("space.home")}
       </NavLink>
-      {canEdit && (
-        <button className="side-new" onClick={() => newPage()}>
-          <Plus size={15} /> {t("space.newPage")}
-        </button>
-      )}
+      <NavLink className={at.kind === "recent" ? "side-link on" : "side-link"} to={{ view: "space", spaceId: space.id, at: { kind: "recent" } }}>
+        <Clock size={15} /> {t("space.recent")}
+      </NavLink>
+      <button className="side-link side-button" onClick={randomPage}>
+        <Dices size={15} /> {t("space.random")}
+      </button>
       <div className="side-heading">
         {t("space.categories")}
         {canEdit && (
@@ -94,9 +165,22 @@ const SpaceView: React.FC<Props> = ({ space, spaces, types, at }) => {
   );
 
   let main: React.ReactNode;
-  switch (at.kind) {
+  if (search) main = <Search query={search.query} spaceId={search.spaceId} spaces={spaces} types={types} />;
+  else switch (at.kind) {
     case "page":
-      main = <PageView key={at.pageId} space={space} spaces={spaces} types={types} categories={categories} pageId={at.pageId} tab={at.tab} revisionId={at.revisionId} />;
+      main = (
+        <PageView
+          key={at.pageId}
+          space={space}
+          spaces={spaces}
+          types={types}
+          categories={categories}
+          pageId={at.pageId}
+          tab={at.tab}
+          revisionId={at.revisionId}
+          section={at.section}
+        />
+      );
       break;
     case "category":
       main = (
@@ -122,16 +206,28 @@ const SpaceView: React.FC<Props> = ({ space, spaces, types, at }) => {
     case "drafts":
       main = <DraftsView space={space} types={types} />;
       break;
+    case "recent":
+      main = <RecentView space={space} types={types} />;
+      break;
     default:
       main = <Home key={space.id} space={space} types={types} categories={categories} />;
   }
 
   return (
-    <div className="space">
+    <div className={pinned ? "space" : "space menu-hidden"}>
+      <div className="space-bar">
+        <button className="icon menu-toggle" title={t("space.mainMenu")} aria-expanded={sideOpen || (pinned && !narrow())} onClick={toggleMenu}>
+          <MenuIcon size={18} />
+        </button>
+        <SearchBox space={space} spaces={spaces} />
+        {canEdit && (
+          <button className="space-new" title={t("space.newPage")} onClick={() => newPage()}>
+            <Plus size={16} /> <span className="space-new-label">{t("space.newPage")}</span>
+          </button>
+        )}
+      </div>
       {side}
-      <button className="side-toggle" onClick={() => setSideOpen(!sideOpen)} aria-expanded={sideOpen}>
-        {sideOpen ? <ChevronDown size={15} /> : <ChevronRight size={15} />} {t("space.menu")}
-      </button>
+      {sideOpen && <div className="side-scrim" onClick={() => setSideOpen(false)} />}
       <main className="space-main">
         {problem && (
           <div className="banner error" onClick={() => setProblem(null)}>
@@ -360,6 +456,22 @@ const TagView: React.FC<{ space: Space; types: PageType[]; tag: string }> = ({ s
         <span className="title-kind">{t("tags.label")}</span> {tag}
       </h1>
       <PageList pages={pages ?? []} types={types} empty={t("tags.noPages")} />
+    </div>
+  );
+};
+
+/** The pages published last, newest first. */
+const RecentView: React.FC<{ space: Space; types: PageType[] }> = ({ space, types }) => {
+  const { value: pages } = useLoaded(
+    `recent:${space.id}`,
+    () => wiki.listPages({ spaceId: space.id, categoryId: "", deep: false, tag: "", typeId: "", drafts: false, recent: true, limit: 50 }).then((r) => r.pages),
+    { spaceId: space.id },
+  );
+  return (
+    <div className="recent-view">
+      <h1 className="page-title">{t("space.recent")}</h1>
+      <p className="hint">{t("recent.hint")}</p>
+      <PageList pages={pages ?? []} types={types} empty={t("recent.empty")} />
     </div>
   );
 };

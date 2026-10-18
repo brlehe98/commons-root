@@ -10,7 +10,8 @@ export type Route =
 
 export type SpaceAt =
   | { kind: "home" }
-  | { kind: "page"; pageId: string; tab?: "read" | "edit" | "history"; revisionId?: string }
+  | { kind: "page"; pageId: string; tab?: "read" | "edit" | "history"; revisionId?: string; section?: { index: number; text: string } }
+  | { kind: "recent" }
   | { kind: "category"; categoryId: string }
   | { kind: "tag"; tag: string }
   | { kind: "tags" }

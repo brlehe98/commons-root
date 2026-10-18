@@ -21,9 +21,9 @@ export default defineConfig({
       { find: /^@(dictionary-[a-z-]+)\//, replacement: fileURLToPath(new URL("../node_modules/", import.meta.url)) + "$1/" },
     ],
   },
-  // Hunspell finds its .wasm next to its own module: keep it out of Vite's
-  // pre-bundling, which would move the module away from the file.
-  optimizeDeps: { exclude: ["hunspell-wasm"] },
+  // Hunspell and Harper find their .wasm next to their own module: keep them
+  // out of Vite's pre-bundling, which would move the module away from the file.
+  optimizeDeps: { exclude: ["hunspell-wasm", "harper.js"] },
   worker: { format: "es" },
   // Type errors are caught by `tsc` in the build and by the editor.
   plugins: [react(), hotReload],

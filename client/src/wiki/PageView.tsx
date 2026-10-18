@@ -1,16 +1,17 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Bell, BellOff, Flag, History, Languages, Pencil, Settings2, Upload } from "lucide-react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import type { Editor } from "@tiptap/core";
+import { Bell, BellOff, ChevronDown, Languages } from "lucide-react";
 import { AccessLevel, Category, Community, Page, PageType, ReportKind, Revision, Space } from "@commons-root/gen-shared";
-import DocEditor from "../DocEditor";
-import Menu from "../ui/Menu";
+import Menu, { MenuItem } from "../ui/Menu";
 import { confirmDialog, formDialog } from "../ui/dialog";
 import { cachedName, loadNames } from "../users";
 import { errorText, formatDate, LANGS, langName, loadContent, pathOf, PMNode, typeOf, useLoaded, wiki } from "./api";
 import { NavLink, pageRoute, useNav } from "./nav";
-import ReadView from "./ReadView";
+import WikiText, { sectionId } from "./WikiText";
 import { outline } from "./outline";
 import Infobox from "./Infobox";
-import PageDetails from "./PageDetails";
+import PageEdit, { TitleInput, useLiveHeadings, usePageDraft } from "./PageEdit";
+import { ContentsButton, ContentsColumn, useContentsPinned } from "./Contents";
 import { locale, t } from "../i18n";
 
 type Tab = "read" | "edit" | "history";
@@ -23,45 +24,67 @@ type Props = {
   pageId: string;
   tab?: Tab;
   revisionId?: string;
+  section?: { index: number; text: string };
 };
 
-const pageDoc = (id: string) => `page:${id}`;
+/** A page as on Wikipedia: Read, Edit and History tabs over the article. */
+const PageView: React.FC<Props> = (props) => {
+  const { value, error, reload } = useLoaded(`page:${props.pageId}`, () => wiki.getPage({ id: props.pageId }).then((r) => r.page ?? null), {
+    pageId: props.pageId,
+  });
+  if (error && !value) return <div className="app-message">{error}</div>;
+  if (!value) return <div className="app-message">{t("app.loading")}</div>;
+  return <PageLayout {...props} page={value} reload={reload} />;
+};
 
-/** A page as on Wikipedia: Read, Edit (or Suggest changes) and History tabs over the article. */
-const PageView: React.FC<Props> = ({ space, spaces, types, categories, pageId, tab = "read", revisionId }) => {
+type Content = { json: PMNode; title: string; fields: Page["publishedFields"] };
+
+const PageLayout: React.FC<Props & { page: Page; reload: () => void }> = ({ space, spaces, types, categories, page, reload, tab = "read", revisionId, section }) => {
   const { replace, go } = useNav();
-  const { value, error, reload } = useLoaded(`page:${pageId}`, () => wiki.getPage({ id: pageId }).then((r) => r.page ?? null), { pageId });
   const [problem, setProblem] = useState<string | null>(null);
-  const page = value ?? null;
-
-  if (error && !page) return <div className="app-message">{error}</div>;
-  if (!page) return <div className="app-message">{t("app.loading")}</div>;
-
+  const edit = usePageDraft(page, reload, setProblem);
   const published = page.publishedAt > 0n;
   const canSuggest = page.level >= AccessLevel.COMMENT;
-  const editLabel = page.level >= AccessLevel.EDIT ? t("page.edit") : t("page.suggest");
-  const setTab = (next: Tab) => replace(pageRoute(space.id, page.id, next === "read" ? undefined : next));
-  const type = typeOf(types, page.typeId);
+  const canEdit = page.level >= AccessLevel.EDIT;
+  const editing = tab === "edit" && canSuggest;
+  const reading = tab === "read" || (tab === "edit" && !canSuggest);
+  const editLabel = !published ? t("page.create") : canEdit ? t("page.edit") : t("page.suggest");
+  const at = (next: Tab, extra?: { section?: { index: number; text: string } }) =>
+    replace({ view: "space", spaceId: space.id, at: { kind: "page", pageId: page.id, tab: next === "read" ? undefined : next, ...extra } });
 
-  const report = async () => {
+  // The published text, for reading.
+  const [content, setContent] = useState<Content | null>(null);
+  const [contentError, setContentError] = useState<string | null>(null);
+  useEffect(() => {
+    if (!published || !reading) return;
+    setContentError(null);
+    loadContent(page.id, Number(revisionId ?? 0))
+      .then(setContent)
+      .catch((err) => setContentError(errorText(err)));
+  }, [page.id, revisionId, Number(page.publishedAt), reading]);
+
+  // The contents: the published headings, or the ones being written.
+  const [editor, setEditor] = useState<Editor | null>(null);
+  const live = useLiveHeadings(editing ? editor : null);
+  const readHeadings = useMemo(() => (content ? outline(content.json).headings : []), [content]);
+  const readTargets = useCallback(
+    () => readHeadings.map((_, i) => document.getElementById(sectionId(i))).filter((el): el is HTMLElement => !!el),
+    [readHeadings],
+  );
+  const headings = editing ? live.headings : reading && content ? readHeadings : [];
+  const targets = editing ? live.targets : readTargets;
+  const [pinned, setPinned] = useContentsPinned();
+  const hasContents = headings.length >= 2;
+
+  const report = async (kind: ReportKind) => {
     const answer = await formDialog(
-      t("report.title"),
-      [
-        {
-          key: "kind",
-          label: t("report.kind"),
-          options: [
-            { value: String(ReportKind.REPORT_ERROR), label: t("report.error") },
-            { value: String(ReportKind.REPORT_ADDITION), label: t("report.addition") },
-          ],
-        },
-        { key: "text", label: t("report.text"), long: true, placeholder: t("report.textHint") },
-      ],
+      kind === ReportKind.REPORT_ERROR ? t("report.reportError") : t("report.suggestAddition"),
+      [{ key: "text", label: t("report.text"), long: true, placeholder: t("report.textHint") }],
       { ok: t("report.send") },
     );
     if (!answer?.text.trim()) return;
     try {
-      await wiki.sendReport({ pageId: page.id, kind: Number(answer.kind) as ReportKind, text: answer.text });
+      await wiki.sendReport({ pageId: page.id, kind, text: answer.text });
       setProblem(t("report.sent"));
     } catch (err) {
       setProblem(errorText(err));
@@ -74,7 +97,7 @@ const PageView: React.FC<Props> = ({ space, spaces, types, categories, pageId, t
       .then(reload)
       .catch((err) => setProblem(errorText(err)));
 
-  const settings = async (action: "community" | "move" | "translate" | "delete") => {
+  const settings = async (action: "community" | "language" | "move" | "translate" | "delete") => {
     try {
       if (action === "community") {
         const answer = await formDialog(t("page.communityTitle"), [
@@ -90,6 +113,17 @@ const PageView: React.FC<Props> = ({ space, spaces, types, categories, pageId, t
           },
         ]);
         if (answer) await wiki.setCommunity({ id: page.id, community: Number(answer.community) as Community });
+        reload();
+      } else if (action === "language") {
+        const answer = await formDialog(t("page.languageTitle"), [
+          {
+            key: "lang",
+            label: t("page.language"),
+            value: edit.draft.lang,
+            options: [{ value: "", label: t("page.anyLanguage") }, ...LANGS.map((code) => ({ value: code, label: langName(code) }))],
+          },
+        ]);
+        if (answer && answer.lang !== edit.draft.lang) await edit.save({ lang: answer.lang });
       } else if (action === "move") {
         const targets = spaces.filter((s) => s.level >= AccessLevel.EDIT && s.id !== space.id);
         if (!targets.length) return setProblem(t("page.noMoveTarget"));
@@ -141,246 +175,237 @@ const PageView: React.FC<Props> = ({ space, spaces, types, categories, pageId, t
     try {
       await wiki.publish({ id: page.id, note: answer.note.trim() });
       reload();
-      setTab("read");
+      at("read");
     } catch (err) {
       setProblem(errorText(err));
     }
   };
 
-  const shownTitle = tab === "edit" ? page.title : page.publishedTitle || page.title;
+  const tools: (MenuItem | "separator")[] = [
+    { key: "follow", label: page.following ? t("page.unfollow") : t("page.follow"), onSelect: follow },
+    ...(published
+      ? [
+          { key: "error", label: t("report.reportError"), onSelect: () => report(ReportKind.REPORT_ERROR) },
+          { key: "addition", label: t("report.suggestAddition"), onSelect: () => report(ReportKind.REPORT_ADDITION) },
+        ]
+      : []),
+    ...(page.canPublish
+      ? [
+          "separator" as const,
+          { key: "language", label: t("page.languageTitle"), hint: edit.draft.lang ? langName(edit.draft.lang) : t("page.anyLanguage"), onSelect: () => settings("language") },
+          { key: "community", label: t("page.communityTitle"), hint: communityLabel(page.community), onSelect: () => settings("community") },
+          { key: "translate", label: t("page.translateTitle"), onSelect: () => settings("translate") },
+          { key: "move", label: t("page.moveTitle"), onSelect: () => settings("move") },
+          "separator" as const,
+          { key: "delete", label: t("page.delete"), danger: true, onSelect: () => settings("delete") },
+        ]
+      : []),
+  ];
+
+  const title = editing ? edit.draft.title : (revisionId && content?.title) || page.publishedTitle || page.title;
+  const type = typeOf(types, page.typeId);
+  const path = pathOf(categories, page.categoryId);
+
+  let body: React.ReactNode;
+  if (editing) {
+    body = (
+      <PageEdit
+        page={page}
+        types={types}
+        categories={categories}
+        edit={edit}
+        focus={section ?? null}
+        onPublish={publish}
+        onError={setProblem}
+        onEditor={setEditor}
+      />
+    );
+  } else if (tab === "history") {
+    body = <PageHistory page={page} onOpen={(id) => go({ view: "space", spaceId: space.id, at: { kind: "page", pageId: page.id, revisionId: id || undefined } })} />;
+  } else if (!published) {
+    body = (
+      <div className="empty-page">
+        <p>{t("page.notPublished")}</p>
+        {canSuggest && <button onClick={() => at("edit")}>{editLabel}</button>}
+      </div>
+    );
+  } else if (contentError) {
+    body = <div className="app-message">{contentError}</div>;
+  } else if (!content) {
+    body = <div className="app-message">{t("app.loading")}</div>;
+  } else {
+    body = (
+      <>
+        {revisionId && (
+          <div className="banner old-version">
+            {t("page.oldVersion")}{" "}
+            <button className="link" onClick={() => replace(pageRoute(space.id, page.id))}>
+              {t("page.currentVersion")}
+            </button>
+          </div>
+        )}
+        <WikiText
+          doc={content.json}
+          onOpenPage={(id) => go(pageRoute(space.id, id))}
+          onEditSection={canSuggest && !revisionId ? (index, text) => at("edit", { section: { index, text } }) : undefined}
+          aside={<Infobox title={content.title || page.publishedTitle} type={type} values={content.fields} />}
+        />
+        {(path.length > 0 || page.tags.length > 0) && (
+          <footer className="catlinks">
+            {path.length > 0 && (
+              <div className="catlinks-row">
+                <NavLink className="catlinks-label" to={{ view: "space", spaceId: space.id, at: { kind: "category", categoryId: path[path.length - 1].id } }}>
+                  {t("read.category")}
+                </NavLink>
+                <span>
+                  {path.map((c, i) => (
+                    <React.Fragment key={c.id}>
+                      {i > 0 && <span className="catlinks-sep"> › </span>}
+                      <NavLink to={{ view: "space", spaceId: space.id, at: { kind: "category", categoryId: c.id } }}>{c.name}</NavLink>
+                    </React.Fragment>
+                  ))}
+                </span>
+              </div>
+            )}
+            {page.tags.length > 0 && (
+              <div className="catlinks-row">
+                <NavLink className="catlinks-label" to={{ view: "space", spaceId: space.id, at: { kind: "tags" } }}>
+                  {t("read.tags")}
+                </NavLink>
+                <span>
+                  {page.tags.map((tag, i) => (
+                    <React.Fragment key={tag}>
+                      {i > 0 && <span className="catlinks-sep"> | </span>}
+                      <NavLink to={{ view: "space", spaceId: space.id, at: { kind: "tag", tag } }}>{tag}</NavLink>
+                    </React.Fragment>
+                  ))}
+                </span>
+              </div>
+            )}
+          </footer>
+        )}
+        {page.backlinks.length > 0 && (
+          <details className="backlinks">
+            <summary>{t("read.whatLinksHere", { count: page.backlinks.length })}</summary>
+            <ul>
+              {page.backlinks.map((b) => (
+                <li key={b.id}>
+                  <NavLink to={pageRoute(b.spaceId, b.id)}>{b.title}</NavLink>
+                </li>
+              ))}
+            </ul>
+          </details>
+        )}
+        <PageStamp page={page} onEdit={canSuggest ? () => at("edit") : undefined} onReport={report} />
+      </>
+    );
+  }
 
   return (
-    <article className="wiki-page">
-      <header className="page-head">
-        <div className="page-tabs" role="tablist">
-          <button role="tab" aria-selected={tab === "read"} className={tab === "read" ? "page-tab on" : "page-tab"} onClick={() => setTab("read")}>
-            {t("page.read")}
-          </button>
-          {canSuggest && (
-            <button role="tab" aria-selected={tab === "edit"} className={tab === "edit" ? "page-tab on" : "page-tab"} onClick={() => setTab("edit")}>
-              <Pencil size={14} /> {editLabel}
-            </button>
-          )}
-          <button role="tab" aria-selected={tab === "history"} className={tab === "history" ? "page-tab on" : "page-tab"} onClick={() => setTab("history")}>
-            <History size={14} /> {t("page.history")}
-          </button>
-          <span className="spacer" />
-          {page.translations.length > 0 && (
-            <Menu
-              className="page-langs"
-              title={t("page.languages")}
-              align="right"
-              trigger={
-                <>
-                  <Languages size={15} /> <span className="page-langs-count">{page.translations.length + 1}</span>
-                </>
-              }
-              items={page.translations.map((tr) => ({
-                key: tr.pageId,
-                label: langName(tr.lang),
-                hint: tr.title,
-                onSelect: () => go(pageRoute(space.id, tr.pageId)),
-              }))}
-            />
-          )}
-          <button className="icon" title={page.following ? t("page.unfollow") : t("page.follow")} onClick={follow}>
-            {page.following ? <BellOff size={16} /> : <Bell size={16} />}
-          </button>
-          {published && (
-            <button className="icon" title={t("report.title")} onClick={report}>
-              <Flag size={16} />
-            </button>
-          )}
-          {page.canPublish && (
-            <Menu
-              title={t("page.settings")}
-              align="right"
-              trigger={<Settings2 size={16} />}
-              items={[
-                { key: "community", label: t("page.communityTitle"), hint: communityLabel(page.community), onSelect: () => settings("community") },
-                { key: "translate", label: t("page.translateTitle"), onSelect: () => settings("translate") },
-                { key: "move", label: t("page.moveTitle"), onSelect: () => settings("move") },
-                "separator",
-                { key: "delete", label: t("page.delete"), danger: true, onSelect: () => settings("delete") },
-              ]}
-            />
-          )}
-        </div>
-        <h1 className="page-title">{shownTitle || t("page.untitled")}</h1>
-        <p className="page-from">
-          {t("page.from", { space: space.name })}
-          {page.lang && <> · {langName(page.lang)}</>}
-        </p>
-      </header>
-
-      {problem && (
-        <div className="banner" role="status" onClick={() => setProblem(null)}>
-          {problem}
-        </div>
-      )}
-      {page.canPublish && page.openReports > 0 && (
-        <div className="banner">
-          <NavLink to={{ view: "reports", pageId: page.id }}>{t("page.openReports", { count: page.openReports })}</NavLink>
-        </div>
-      )}
-
-      {tab === "edit" && canSuggest ? (
-        <div className="page-edit">
-          {page.level < AccessLevel.EDIT && <p className="hint">{t("page.suggestHint")}</p>}
-          <PageDetails page={page} types={types} categories={categories} onError={setProblem} onSaved={reload} />
-          <div className="page-editor">
-            <DocEditor
-              docId={pageDoc(page.id)}
-              level={page.level}
-              actions={
-                page.canPublish ? (
-                  <button className="primary publish-button" onClick={publish} title={page.draftChanged || !published ? undefined : t("page.nothingNew")}>
-                    <Upload size={15} /> {t("page.publish")}
-                  </button>
-                ) : undefined
-              }
-            />
+    <article className={`wiki-page${hasContents ? " has-contents" : ""}${hasContents && pinned ? " contents-pinned" : ""}${editing ? " is-editing" : ""}`}>
+      {hasContents && <ContentsColumn headings={headings} targets={targets} onHide={() => setPinned(false)} />}
+      <div className="wiki-col">
+        <header className="wiki-head">
+          <div className="title-row">
+            {hasContents && <ContentsButton headings={headings} targets={targets} pinned={pinned} onPin={() => setPinned(true)} />}
+            {editing ? (
+              <TitleInput value={edit.draft.title} disabled={!canEdit} onSave={(next) => edit.save({ title: next })} />
+            ) : (
+              <h1 className="page-title">{title || t("page.untitled")}</h1>
+            )}
+            {(page.translations.length > 0 || page.canPublish) && (
+              <Menu
+                className="page-langs"
+                title={t("page.languages")}
+                align="right"
+                trigger={
+                  <>
+                    <Languages size={16} />
+                    <span className="page-langs-label">
+                      {page.translations.length ? t("page.languagesCount", { count: page.translations.length + 1 }) : t("page.addLanguages")}
+                    </span>
+                    <ChevronDown size={14} />
+                  </>
+                }
+                items={[
+                  ...page.translations.map((tr) => ({
+                    key: tr.pageId,
+                    label: langName(tr.lang),
+                    hint: tr.title,
+                    onSelect: () => go(pageRoute(space.id, tr.pageId)),
+                  })),
+                  ...(page.canPublish
+                    ? [...(page.translations.length ? ["separator" as const] : []), { key: "add", label: t("page.translateTitle"), onSelect: () => settings("translate") }]
+                    : []),
+                ]}
+              />
+            )}
           </div>
-        </div>
-      ) : tab === "history" ? (
-        <PageHistory page={page} onOpen={(id) => go({ view: "space", spaceId: space.id, at: { kind: "page", pageId: page.id, tab: "read", revisionId: id } })} />
-      ) : !published ? (
-        <div className="empty-page">
-          <p>{t("page.notPublished")}</p>
-          {canSuggest && <button onClick={() => setTab("edit")}>{editLabel}</button>}
-        </div>
-      ) : (
-        <PublishedPage
-          page={page}
-          space={space}
-          type={type}
-          categories={categories}
-          revisionId={revisionId}
-          onCurrent={() => replace(pageRoute(space.id, page.id))}
-          onEdit={canSuggest ? () => setTab("edit") : undefined}
-        />
-      )}
+          <nav className="page-tabs">
+            <div className="tabs-left">
+              <span className="page-tab on">{t("page.pageTab")}</span>
+              {page.canPublish && (
+                <NavLink className="page-tab" to={{ view: "reports", pageId: page.id }}>
+                  {page.openReports ? t("app.reportsCount", { count: page.openReports }) : t("app.reports")}
+                </NavLink>
+              )}
+            </div>
+            <div className="tabs-right" role="tablist">
+              <button role="tab" aria-selected={reading} className={reading ? "page-tab on" : "page-tab"} onClick={() => at("read")}>
+                {t("page.read")}
+              </button>
+              {canSuggest && (
+                <button role="tab" aria-selected={editing} className={editing ? "page-tab on" : "page-tab"} onClick={() => at("edit")}>
+                  {editLabel}
+                </button>
+              )}
+              <button role="tab" aria-selected={tab === "history"} className={tab === "history" ? "page-tab on" : "page-tab"} onClick={() => at("history")}>
+                {t("page.history")}
+              </button>
+              <button className="icon page-follow" title={page.following ? t("page.unfollow") : t("page.follow")} aria-pressed={page.following} onClick={follow}>
+                {page.following ? <BellOff size={16} /> : <Bell size={16} />}
+              </button>
+              <Menu
+                className="page-tools"
+                title={t("page.tools")}
+                align="right"
+                trigger={
+                  <>
+                    <span>{t("page.tools")}</span>
+                    <ChevronDown size={14} />
+                  </>
+                }
+                items={tools}
+              />
+            </div>
+          </nav>
+        </header>
+        <p className="tagline">
+          {tab === "history" ? t("history.title") : t("page.from", { space: space.name })}
+          {tab !== "history" && edit.draft.lang && <> · {langName(edit.draft.lang)}</>}
+        </p>
+        {problem && (
+          <div className="banner" role="status" onClick={() => setProblem(null)}>
+            {problem}
+          </div>
+        )}
+        {body}
+      </div>
     </article>
   );
 };
 
 const communityLabel = (c: Community) => (c === Community.EDIT ? t("community.edit") : c === Community.SUGGEST ? t("community.suggest") : t("community.none"));
 
-/** The published text with its infobox, contents, references, categories and backlinks. */
-const PublishedPage: React.FC<{
-  page: Page;
-  space: Space;
-  type: PageType | undefined;
-  categories: Category[];
-  revisionId?: string;
-  onCurrent: () => void;
-  onEdit?: () => void;
-}> = ({ page, space, type, categories, revisionId, onCurrent, onEdit }) => {
-  const { go } = useNav();
-  const [content, setContent] = useState<{ json: PMNode; title: string; fields: Page["publishedFields"] } | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const body = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    setError(null);
-    loadContent(page.id, Number(revisionId ?? 0))
-      .then(setContent)
-      .catch((err) => setError(errorText(err)));
-  }, [page.id, revisionId, Number(page.publishedAt)]);
-  const headings = useMemo(() => (content ? outline(content.json).headings : []), [content]);
-  const [names, setNames] = useState(0);
+/** The line at the bottom of a page: when it was published, by whom, and how to point out a problem. */
+const PageStamp: React.FC<{ page: Page; onEdit?: () => void; onReport: (kind: ReportKind) => void }> = ({ page, onEdit, onReport }) => {
+  const [, setNames] = useState(0);
   useEffect(() => {
     if (page.publishedBy) loadNames([page.publishedBy]).then(() => setNames((n) => n + 1));
   }, [page.publishedBy]);
-
-  if (error) return <div className="app-message">{error}</div>;
-  if (!content) return <div className="app-message">{t("app.loading")}</div>;
-
-  const toHeading = (i: number) => body.current?.querySelectorAll(".ProseMirror h1, .ProseMirror h2, .ProseMirror h3, .ProseMirror h4")[i]?.scrollIntoView({ behavior: "smooth", block: "start" });
-  const path = pathOf(categories, page.categoryId);
-  const showContents = headings.length >= 3;
-
   return (
-    <div className="page-body">
-      {revisionId && (
-        <div className="banner old-version">
-          {t("page.oldVersion")}{" "}
-          <button className="link" onClick={onCurrent}>
-            {t("page.currentVersion")}
-          </button>
-        </div>
-      )}
-      <div className="page-columns">
-        <div className="page-main">
-          <ReadView doc={content.json} bodyRef={body} onOpenPage={(id) => go(pageRoute(space.id, id))} />
-        </div>
-        {(type || showContents) && (
-          <div className="page-side">
-            <Infobox title={content.title || page.publishedTitle} type={type} values={content.fields} />
-            {showContents && (
-              <nav className="toc" aria-label={t("read.contents")}>
-                <div className="toc-title">{t("read.contents")}</div>
-                <ol>
-                  {headings.map((h, i) => (
-                    <li key={i} className={`toc-l${Math.min(h.level, 4)}`}>
-                      <a
-                        href="#"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          toHeading(i);
-                        }}
-                      >
-                        {h.text}
-                      </a>
-                    </li>
-                  ))}
-                </ol>
-              </nav>
-            )}
-          </div>
-        )}
-      </div>
-
-      {(path.length > 0 || page.tags.length > 0) && (
-        <footer className="catlinks">
-          {path.length > 0 && (
-            <div>
-              <span className="catlinks-label">{t("read.category")}</span>{" "}
-              {path.map((c, i) => (
-                <React.Fragment key={c.id}>
-                  {i > 0 && " › "}
-                  <NavLink to={{ view: "space", spaceId: space.id, at: { kind: "category", categoryId: c.id } }}>{c.name}</NavLink>
-                </React.Fragment>
-              ))}
-            </div>
-          )}
-          {page.tags.length > 0 && (
-            <div>
-              <span className="catlinks-label">{t("read.tags")}</span>{" "}
-              {page.tags.map((tag, i) => (
-                <React.Fragment key={tag}>
-                  {i > 0 && " · "}
-                  <NavLink to={{ view: "space", spaceId: space.id, at: { kind: "tag", tag } }}>{tag}</NavLink>
-                </React.Fragment>
-              ))}
-            </div>
-          )}
-        </footer>
-      )}
-
-      {page.backlinks.length > 0 && (
-        <details className="backlinks">
-          <summary>{t("read.whatLinksHere", { count: page.backlinks.length })}</summary>
-          <ul>
-            {page.backlinks.map((b) => (
-              <li key={b.id}>
-                <NavLink to={pageRoute(b.spaceId, b.id)}>{b.title}</NavLink>
-              </li>
-            ))}
-          </ul>
-        </details>
-      )}
-
-      <p className="page-stamp" data-names={names}>
+    <div className="page-stamp">
+      <p>
         {t("read.lastPublished", { date: formatDate(page.publishedAt), name: cachedName(page.publishedBy) })}
         {onEdit && page.draftChanged && (
           <>
@@ -391,11 +416,20 @@ const PublishedPage: React.FC<{
           </>
         )}
       </p>
+      <p className="page-stamp-links">
+        <button className="link" onClick={() => onReport(ReportKind.REPORT_ERROR)}>
+          {t("report.reportError")}
+        </button>
+        <span aria-hidden> · </span>
+        <button className="link" onClick={() => onReport(ReportKind.REPORT_ADDITION)}>
+          {t("report.suggestAddition")}
+        </button>
+      </p>
     </div>
   );
 };
 
-/** The publications of the page, newest first. Draft versions are in the editor's own history. */
+/** The publications of the page, newest first, as Wikipedia lists its history. Draft versions are in the editor's own history. */
 const PageHistory: React.FC<{ page: Page; onOpen: (revisionId: string) => void }> = ({ page, onOpen }) => {
   const [revisions, setRevisions] = useState<Revision[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -416,19 +450,19 @@ const PageHistory: React.FC<{ page: Page; onOpen: (revisionId: string) => void }
     <section className="page-history">
       <p className="hint">{page.level >= AccessLevel.COMMENT ? t("history.publicationsHintEditor") : t("history.publicationsHint")}</p>
       {revisions.length ? (
-        <ol className="revision-list">
+        <ul className="revision-list">
           {revisions.map((r, i) => (
             <li key={String(r.id)}>
-              <button className="link" onClick={() => onOpen(i === 0 ? "" : String(r.id))}>
-                {new Date(Number(r.createdAt)).toLocaleString(locale(), { dateStyle: "long", timeStyle: "short" })}
-              </button>{" "}
+              <button className="link revision-date" onClick={() => onOpen(i === 0 ? "" : String(r.id))}>
+                {new Date(Number(r.createdAt)).toLocaleString(locale(), { dateStyle: "medium", timeStyle: "short" })}
+              </button>
               <span className="revision-author">{cachedName(r.authorId)}</span>
               {i === 0 && <span className="revision-current">{t("history.currentPublication")}</span>}
-              {r.note && <span className="revision-note">{r.note}</span>}
+              {r.note && <span className="revision-note">({r.note})</span>}
               {r.title !== (revisions[i + 1]?.title ?? r.title) && <span className="revision-note">{t("history.renamed", { title: r.title })}</span>}
             </li>
           ))}
-        </ol>
+        </ul>
       ) : (
         <p className="hint">{t("history.noPublications")}</p>
       )}
