@@ -10,6 +10,8 @@ const DB_NAME = "commons-snapshots";
 const STORE = "snapshots";
 const MAX_ENTRIES = 60;
 const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+// Raised when saved data changes shape, so copies from an older version are ignored.
+const SHAPE = 2;
 
 type Entry = { key: string; value: unknown; at: number };
 
@@ -23,7 +25,7 @@ function scoped(key: string): string {
   } catch {
     // No member yet (tests): one shared scope.
   }
-  return `${user}:${key}`;
+  return `v${SHAPE}:${user}:${key}`;
 }
 
 function request<T>(r: IDBRequest<T>): Promise<T> {

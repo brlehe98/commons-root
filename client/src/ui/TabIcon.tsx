@@ -15,6 +15,7 @@ const TabIcon: React.FC<{ icon: string; color?: string; size?: number; fallback?
   size = 16,
   fallback = null,
 }) => {
+  icon ??= "";
   if (icon.startsWith(ASSET_PREFIX)) {
     const url = fixDevHostImageUrl(rootClient.assets.toImageUrl(icon.slice(ASSET_PREFIX.length), ImageUriResolution.Small));
     return <img className="tab-icon-image" src={url} width={size} height={size} style={{ width: size, height: size }} alt="" />;
