@@ -58,25 +58,26 @@ export function adminsUnset(): boolean {
   return !group || (!group.userIds?.length && !group.communityRoleIds?.length && !group.memberUserIds?.length);
 }
 
-// The community's owner and roles with full control, re-read each minute.
+// The community's owner and the roles that run it (full control, or managing
+// the community or its apps), re-read each minute.
 let serverAdmins: { ownerId: string; roleIds: Set<string>; expires: number } | undefined;
 async function serverAdminsNow() {
   if (serverAdmins && serverAdmins.expires > Date.now()) return serverAdmins;
   const [community, roles] = await Promise.all([rootServer.community.communities.get(), rootServer.community.communityRoles.list()]);
   serverAdmins = {
     ownerId: community.ownerUserId,
-    roleIds: new Set(roles.filter((r) => r.communityPermission.communityFullControl).map((r) => r.id)),
+    roleIds: new Set(roles.filter(({ communityPermission: p }) => p.communityFullControl || p.communityManageCommunity || p.communityManageApps).map((r) => r.id)),
     expires: Date.now() + 60_000,
   };
   return serverAdmins;
 }
 
-/** Roles with full control of the Root community; their members are app admins. */
+/** Roles that run the Root community; their members are app admins. */
 export async function serverAdminRoleIds(): Promise<Set<string>> {
   return (await serverAdminsNow().catch(() => undefined))?.roleIds ?? new Set();
 }
 
-/** The Root community's admins: its owner and members of a role with full control. */
+/** The Root community's admins: its owner and the members of a role that runs it. */
 export async function isServerAdmin(userId: UserGuid): Promise<boolean> {
   try {
     const admins = await serverAdminsNow();
