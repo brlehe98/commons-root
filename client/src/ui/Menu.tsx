@@ -30,7 +30,7 @@ const Menu: React.FC<Props> = ({ trigger, title, items, className, disabled, ali
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const pop = useRef<HTMLDivElement>(null);
-  // The side the list opens to: the one asked for, unless it would leave the screen.
+  // The side the list opens to: the one asked for, unless it would leave the screen (checked once per opening).
   const [side, setSide] = useState(align);
 
   useLayoutEffect(() => {
@@ -39,7 +39,7 @@ const Menu: React.FC<Props> = ({ trigger, title, items, className, disabled, ali
     if (!box) return;
     if (box.left < 0) setSide("left");
     else if (box.right > window.innerWidth) setSide("right");
-  }, [open, align, side]);
+  }, [open, align]);
 
   useEffect(() => {
     if (!open) return;
