@@ -71,6 +71,11 @@ async function serverAdminsNow() {
   return serverAdmins;
 }
 
+/** Roles with full control of the Root community; their members are app admins. */
+export async function serverAdminRoleIds(): Promise<Set<string>> {
+  return (await serverAdminsNow().catch(() => undefined))?.roleIds ?? new Set();
+}
+
 /** The Root community's admins: its owner and members of a role with full control. */
 export async function isServerAdmin(userId: UserGuid): Promise<boolean> {
   try {

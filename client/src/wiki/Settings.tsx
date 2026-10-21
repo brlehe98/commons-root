@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { ArrowDown, ArrowLeft, ArrowUp, BookOpen, ChevronRight, Globe, Layers, LayoutTemplate, Plus, ShieldCheck, Trash2, Users, X } from "lucide-react";
-import { AccessLevel, FieldDef, FieldKind, PageType, Role, RoleAccess, Space } from "@commons-root/gen-shared";
+import { ArrowDown, ArrowLeft, ArrowUp, BookOpen, ChevronRight, Globe, Layers, LayoutTemplate, Lock, Plus, ShieldCheck, Trash2, Users, X } from "lucide-react";
+import { AccessLevel, FieldDef, FieldKind, PageType, RoleAccess, Space } from "@commons-root/gen-shared";
 import SectionTitle from "../ui/SectionTitle";
 import StylePicker from "../ui/StylePicker";
 import TabIcon from "../ui/TabIcon";
@@ -87,18 +87,10 @@ const SpacesList: React.FC<{
   act: (fn: () => Promise<unknown>) => Promise<void>;
   onOpen: (id: string) => void;
 }> = ({ spaces, act, onOpen }) => {
-  const [roles, setRoles] = useState<Role[]>([]);
   const [name, setName] = useState("");
-  const [roleId, setRoleId] = useState("");
   const [everyoneReads, setEveryoneReads] = useState(true);
-  // The new group's form opens on demand.
+  // The new space's form opens on demand.
   const [adding, setAdding] = useState(false);
-  useEffect(() => {
-    wiki
-      .listRoles()
-      .then((r) => setRoles(r.roles))
-      .catch(() => setRoles([]));
-  }, []);
   // The main space stays first.
   const groups = spaces.filter((s) => !s.main);
   const moveTo = (from: number, to: number) =>
@@ -152,19 +144,19 @@ const SpacesList: React.FC<{
         ))}
         {!adding ? (
           <button className="add-row" onClick={() => setAdding(true)}>
-            <Plus size={15} /> {t("settings.newGroup")}
+            <Plus size={15} /> {t("settings.newSpace")}
           </button>
         ) : (
           <form
             className="new-group"
             onSubmit={(e) => {
               e.preventDefault();
-              if (!name.trim() || !roleId) return;
+              if (!name.trim()) return;
               act(async () => {
                 const { space } = await wiki.saveSpace({
                   id: "",
                   name: name.trim(),
-                  roleId,
+                  roleId: "",
                   everyoneReads,
                 });
                 setName("");
@@ -174,32 +166,19 @@ const SpacesList: React.FC<{
             }}
           >
             <h3 className="sub-title">
-              <Users size={15} /> {t("settings.newGroup")}
+              <Layers size={15} /> {t("settings.newSpace")}
             </h3>
-            <p className="hint">{t("settings.newGroupHint")}</p>
             <label className="detail">
               <span>{t("settings.groupName")}</span>
-              <input value={name} maxLength={80} onChange={(e) => setName(e.target.value)} />
+              <input value={name} maxLength={80} autoFocus onChange={(e) => setName(e.target.value)} />
             </label>
-            <label className="detail">
-              <span>{t("settings.groupRole")}</span>
-              <select value={roleId} onChange={(e) => setRoleId(e.target.value)}>
-                <option value="">{t("settings.chooseRole")}</option>
-                {roles.map((r) => (
-                  <option key={r.id} value={r.id}>
-                    {r.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="check">
-              <input type="checkbox" className="switch" checked={everyoneReads} onChange={(e) => setEveryoneReads(e.target.checked)} /> {t("settings.everyoneReads")}
-            </label>
+            <WhoReads everyone={everyoneReads} onChange={setEveryoneReads} />
+            <p className="hint">{t("settings.newSpaceHint")}</p>
             <div className="row-actions">
               <button type="button" onClick={() => setAdding(false)}>
                 {t("common.cancel")}
               </button>
-              <button type="submit" className="primary" disabled={!name.trim() || !roleId}>
+              <button type="submit" className="primary" disabled={!name.trim()}>
                 {t("admin.create")}
               </button>
             </div>
@@ -263,24 +242,10 @@ const SpaceSettings: React.FC<{
         {space.main ? (
           <p className="hint">{t("settings.mainHint")}</p>
         ) : (
-          <label className="check">
-            <input
-              type="checkbox"
-              className="switch"
-              checked={space.everyoneReads}
-              onChange={(e) =>
-                act(() =>
-                  wiki.saveSpace({
-                    id: space.id,
-                    name: space.name,
-                    roleId: "",
-                    everyoneReads: e.target.checked,
-                  }),
-                )
-              }
-            />{" "}
-            {t("settings.everyoneReads")}
-          </label>
+          <WhoReads
+            everyone={space.everyoneReads}
+            onChange={(everyoneReads) => act(() => wiki.saveSpace({ id: space.id, name: space.name, roleId: "", everyoneReads }))}
+          />
         )}
       </section>
       <AccessEditor space={space} onError={onError} />
@@ -288,12 +253,29 @@ const SpaceSettings: React.FC<{
   );
 };
 
+/** Who reads a space: everyone in the community, or only the roles listed below. */
+const WhoReads: React.FC<{ everyone: boolean; onChange: (everyone: boolean) => void }> = ({ everyone, onChange }) => (
+  <fieldset className="who-reads">
+    <legend>{t("settings.whoHasAccess")}</legend>
+    <label>
+      <input type="radio" checked={everyone} onChange={() => onChange(true)} /> <Globe size={15} /> {t("settings.everyone")}
+    </label>
+    <label>
+      <input type="radio" checked={!everyone} onChange={() => onChange(false)} /> <Users size={15} /> {t("settings.chosenRoles")}
+    </label>
+  </fieldset>
+);
+
+/**
+ * The roles with more than the space's floor: everyone reads an open space,
+ * so its list only holds who writes or manages; a closed one lists its readers too.
+ * Each change saves at once.
+ */
 const AccessEditor: React.FC<{
   space: Space;
   onError: (msg: string) => void;
 }> = ({ space, onError }) => {
   const [roles, setRoles] = useState<RoleAccess[] | null>(null);
-  const [saved, setSaved] = useState(true);
   useEffect(() => {
     wiki
       .getAccess({ spaceId: space.id })
@@ -301,53 +283,62 @@ const AccessEditor: React.FC<{
       .catch((err) => onError(errorText(err)));
   }, [space.id]);
   if (!roles) return <section>{t("admin.loadingRoles")}</section>;
-  // In the main space and open groups, everyone reads at least.
   const floor = space.main || space.everyoneReads ? AccessLevel.READ : AccessLevel.INVISIBLE;
+  const save = (roleId: string, level: AccessLevel) => {
+    const next = roles.map((x) => (x.roleId === roleId ? { ...x, level } : x));
+    setRoles(next);
+    wiki.setAccess({ spaceId: space.id, roles: next }).catch((err) => onError(errorText(err)));
+  };
+  const listed = roles.filter((r) => r.appAdmin || r.level > floor);
+  const others = roles.filter((r) => !r.appAdmin && r.level <= floor);
+  const choices = LEVELS.filter((l) => l.level > floor);
   return (
     <section>
-      <SectionTitle icon={<ShieldCheck size={16} />}>{t("settings.whoWrites", { name: space.name })}</SectionTitle>
+      <SectionTitle icon={<ShieldCheck size={16} />}>{floor ? t("settings.whoWrites", { name: space.name }) : t("settings.whoReadsWrites", { name: space.name })}</SectionTitle>
       <p className="hint">{floor ? t("settings.accessHintOpen") : t("settings.accessHintHidden")}</p>
-      <table className="access">
-        <tbody>
-          {roles.map((r) => (
-            <tr key={r.roleId}>
-              <td>
-                <span className="dot" style={{ background: r.roleColor || "var(--muted)" }} /> {r.roleName}
-              </td>
-              <td>
-                <select
-                  value={Math.max(r.level, floor)}
-                  disabled={r.appAdmin}
-                  title={r.appAdmin ? t("admin.appAdminTitle") : undefined}
-                  onChange={(e) => {
-                    setRoles(roles.map((x) => (x.roleId === r.roleId ? { ...x, level: Number(e.target.value) } : x)));
-                    setSaved(false);
-                  }}
-                >
-                  {LEVELS.filter((l) => l.level >= floor).map((l) => (
-                    <option key={l.level} value={l.level}>
-                      {l.label()}
-                    </option>
-                  ))}
-                </select>
-                {r.appAdmin && <span className="hint"> {t("admin.appAdmin")}</span>}
-              </td>
-            </tr>
+      {listed.length > 0 && (
+        <table className="access">
+          <tbody>
+            {listed.map((r) => (
+              <tr key={r.roleId}>
+                <td>
+                  <span className="dot" style={{ background: r.roleColor || "var(--muted)" }} /> {r.roleName}
+                </td>
+                <td>
+                  {r.appAdmin ? (
+                    <span className="hint locked" title={t("admin.appAdminTitle")}>
+                      <Lock size={14} /> {t("level.admin")}
+                    </span>
+                  ) : (
+                    <>
+                      <select value={r.level} aria-label={r.roleName} onChange={(e) => save(r.roleId, Number(e.target.value))}>
+                        {choices.map((l) => (
+                          <option key={l.level} value={l.level}>
+                            {l.label()}
+                          </option>
+                        ))}
+                      </select>
+                      <button className="icon" title={t("settings.removeRole")} onClick={() => save(r.roleId, AccessLevel.INVISIBLE)}>
+                        <X size={15} />
+                      </button>
+                    </>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+      {others.length > 0 && (
+        <select className="add-role" value="" aria-label={t("settings.addRole")} onChange={(e) => e.target.value && save(e.target.value, choices[0].level)}>
+          <option value="">+ {t("settings.addRole")}</option>
+          {others.map((r) => (
+            <option key={r.roleId} value={r.roleId}>
+              {r.roleName}
+            </option>
           ))}
-        </tbody>
-      </table>
-      <button
-        className="primary"
-        disabled={saved}
-        onClick={() =>
-          wiki
-            .setAccess({ spaceId: space.id, roles })
-            .then(() => setSaved(true))
-            .catch((err) => onError(errorText(err)))
-        }
-      >
-        {saved ? t("common.saved") : t("admin.saveAccess")}
-      </button>
+        </select>
+      )}
     </section>
   );
 };

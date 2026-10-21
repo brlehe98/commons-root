@@ -77,6 +77,7 @@ import {
   deleteSpaceGroup,
   findSpace,
   isAppAdmin,
+  serverAdminRoleIds,
   levelIn,
   pageAccess,
   requireAdmin,
@@ -325,20 +326,15 @@ export class WikiService extends WikiServiceBase {
       const space = await findSpace(id);
       await run("UPDATE spaces SET name = ?, everyone_reads = ? WHERE id = ?", [name, space.main || request.everyoneReads ? 1 : 0, id]);
     } else {
-      const roles = await rootServer.community.communityRoles.list();
-      if (!roles.some((r) => r.id === request.roleId)) throw new Error("Choose the role whose members write in this group.");
       id = crypto.randomUUID();
       const max = await get<{ p: number | null }>("SELECT MAX(position) AS p FROM spaces", []);
-      await run("INSERT INTO spaces (id, name, position, main, role_id, everyone_reads, home) VALUES (?, ?, ?, 0, ?, ?, ?)", [
+      await run("INSERT INTO spaces (id, name, position, main, role_id, everyone_reads, home) VALUES (?, ?, ?, 0, '', ?, ?)", [
         id,
         name,
         (max?.p ?? 0) + 1,
-        request.roleId,
         request.everyoneReads ? 1 : 0,
         JSON.stringify(DEFAULT_HOME()),
       ]);
-      // The role's members are the group's editors.
-      await run("INSERT INTO space_access (space_id, role_id, level) VALUES (?, ?, ?)", [id, request.roleId, AccessLevel.EDIT]);
     }
     await syncSpaceGroup(id);
     this.broadcastSpacesChanged({}, "all");
@@ -382,7 +378,7 @@ export class WikiService extends WikiServiceBase {
     const roles = await rootServer.community.communityRoles.list();
     const rows = await all<{ role_id: string; level: number }>("SELECT * FROM space_access WHERE space_id = ?", [request.spaceId]);
     const levels = new Map(rows.map((r) => [r.role_id, r.level]));
-    const admins = adminRoleIds();
+    const admins = new Set([...adminRoleIds(), ...(await serverAdminRoleIds())]);
     return {
       roles: roles.map((r) => ({
         roleId: r.id,
@@ -398,7 +394,7 @@ export class WikiService extends WikiServiceBase {
     await requireAdmin(client.userId);
     await findSpace(request.spaceId);
     await run("DELETE FROM space_access WHERE space_id = ?", [request.spaceId]);
-    const admins = adminRoleIds();
+    const admins = new Set([...adminRoleIds(), ...(await serverAdminRoleIds())]);
     for (const r of request.roles) {
       // App admin roles are Admin everywhere through the app settings.
       if (r.level > AccessLevel.INVISIBLE && r.level <= AccessLevel.ADMIN && !admins.has(r.roleId)) {

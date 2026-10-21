@@ -15,6 +15,7 @@ import { ContentsButton, ContentsColumn, useContentsPinned } from "./Contents";
 import UserName, { withUser } from "../ui/UserName";
 import CategoryIcon from "./CategoryIcon";
 import { locale, t } from "../i18n";
+import { showToast } from "../ui/toast";
 
 type Tab = "read" | "edit" | "history";
 
@@ -100,7 +101,7 @@ const PageLayout: React.FC<Props & { page: Page; reload: () => void }> = ({ spac
     if (!answer?.text.trim()) return;
     try {
       await wiki.sendReport({ pageId: page.id, kind, text: answer.text });
-      setProblem(t("report.sent"));
+      showToast(t("report.sent"));
     } catch (err) {
       setProblem(errorText(err));
     }

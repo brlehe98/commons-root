@@ -384,7 +384,7 @@ a.catlinks-label { color: var(--link); }
 .recent-view .hint { margin-top: -6px; }
 .drafts-view .hint { margin-top: -6px; }
 .tag-cloud { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: baseline; }
-.tag-chip { display: inline-flex; align-items: baseline; gap: 6px; padding: 4px 10px; border: 1px solid var(--border); border-radius: 999px; color: var(--text); text-decoration: none; font-family: var(--font-ui); }
+.tag-chip { display: inline-flex; align-items: baseline; gap: 6px; padding: 4px 10px; border: 1px solid var(--border); border-radius: 6px; color: var(--text); text-decoration: none; font-family: var(--font-ui); }
 .tag-chip:hover { border-color: var(--border-strong); background: var(--hover); }
 .tag-count { color: var(--muted); font-size: 13px; }
 
@@ -612,7 +612,7 @@ td.infobox-add-row button.link { display: inline-flex; align-items: center; gap:
 .space-main .admin .ws-row .ws-name { font-size: 15px; }
 .space-main .admin .ws-row .ws-name .hint { margin-left: 6px; font-weight: 400; }
 .space-main .admin button.row-open { display: inline-flex; align-items: center; gap: 4px; }
-.space-main .admin button.add-row { display: inline-flex; align-items: center; gap: 6px; margin-top: 4px; }
+.space-main .admin button.add-row { display: inline-flex; align-items: center; gap: 6px; margin-top: -2px; align-self: flex-start; }
 .space-main .admin .new-group { margin-top: 12px; padding: 14px 16px; border: 1px dashed var(--border-strong); border-radius: 8px; }
 .space-main .admin .new-group .sub-title { display: flex; align-items: center; gap: 6px; margin: 0; }
 .space-main .admin .access { border-collapse: separate; border-spacing: 0 6px; }
@@ -660,3 +660,19 @@ button.user-name:hover .user-label { text-decoration: underline; text-underline-
 @media (max-width: 600px) {
   .tabs-right .page-tab > svg { display: none; }
 }
+
+/* The first section under the settings title needs no second line. */
+:root[data-theme="dark"] .space-main .admin > section:first-of-type { border-top: none; padding-top: 4px; }
+/* Who reads a space: two plain choices. */
+.who-reads { display: flex; flex-wrap: wrap; gap: 8px 20px; margin: 0; padding: 0; border: none; }
+.who-reads legend { width: 100%; padding: 0 0 6px; font-weight: 600; font-size: 14px; }
+.who-reads label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.who-reads svg { color: var(--muted); }
+.space-main .admin table.access td:last-child { display: flex; align-items: center; justify-content: flex-end; gap: 6px; }
+.space-main .admin select.add-role { align-self: flex-start; }
+/* A short message at the bottom that goes away by itself. */
+.toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 1000; max-width: calc(100vw - 32px); padding: 10px 16px; border-radius: 8px; background: var(--card); color: var(--text); border: 1px solid var(--border-strong); font-family: var(--font-ui); font-size: 14px; box-shadow: var(--shadow-md, 0 4px 14px rgb(0 0 0 / 0.2)); animation: toast-in 0.2s ease-out; transition: opacity 0.3s; }
+.toast.leaving { opacity: 0; }
+@keyframes toast-in { from { opacity: 0; transform: translate(-50%, 8px); } }
+@media (prefers-reduced-motion: reduce) { .toast { animation: none; } }
+.space-main .admin .locked { display: inline-flex; align-items: center; gap: 6px; }
