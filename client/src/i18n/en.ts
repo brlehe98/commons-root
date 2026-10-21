@@ -9,7 +9,6 @@ const catalog = {
   "app.loading": "Loading…",
   "app.notifications": "Notifications",
   "app.settings": "Settings",
-  "app.adminsUnset": "No app admin yet: everyone can change the settings. Choose admins in the app's settings in Root.",
 
   // Deadlines and publication dates
   "due.inDays": { one: "In {count} day", other: "In {count} days" },

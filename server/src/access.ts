@@ -58,10 +58,34 @@ export function adminsUnset(): boolean {
   return !group || (!group.userIds?.length && !group.communityRoleIds?.length && !group.memberUserIds?.length);
 }
 
+// The community's owner and roles with full control, re-read each minute.
+let serverAdmins: { ownerId: string; roleIds: Set<string>; expires: number } | undefined;
+async function serverAdminsNow() {
+  if (serverAdmins && serverAdmins.expires > Date.now()) return serverAdmins;
+  const [community, roles] = await Promise.all([rootServer.community.communities.get(), rootServer.community.communityRoles.list()]);
+  serverAdmins = {
+    ownerId: community.ownerUserId,
+    roleIds: new Set(roles.filter((r) => r.communityPermission.communityFullControl).map((r) => r.id)),
+    expires: Date.now() + 60_000,
+  };
+  return serverAdmins;
+}
+
+/** The Root community's admins: its owner and members of a role with full control. */
+export async function isServerAdmin(userId: UserGuid): Promise<boolean> {
+  try {
+    const admins = await serverAdminsNow();
+    return admins.ownerId === userId || (await rolesOf(userId)).some((r) => admins.roleIds.has(r));
+  } catch (err) {
+    console.warn("Could not read the community's admins:", (err as Error)?.message ?? err);
+    return false;
+  }
+}
+
+/** Server admins always, plus whoever the "App admins" setting names. */
 export async function isAppAdmin(userId: UserGuid): Promise<boolean> {
-  // Until an admin is set, everyone can configure the app so it can be set up.
-  if (adminsUnset()) return true;
-  return adminSetting()!.isMember({ userId });
+  if (await isServerAdmin(userId)) return true;
+  return !adminsUnset() && adminSetting()!.isMember({ userId });
 }
 
 export type SpaceRow = {
@@ -164,8 +188,9 @@ export async function syncSpaceGroup(spaceId: string) {
     AccessLevel.READ,
   ]);
   const admins = adminSetting();
-  const roleIds = Array.from(new Set([...rows.map((r) => r.role_id), ...(admins?.communityRoleIds ?? [])])) as CommunityRoleGuid[];
-  const userIds = (admins?.userIds ?? []) as UserGuid[];
+  const server = await serverAdminsNow().catch(() => undefined);
+  const roleIds = Array.from(new Set([...rows.map((r) => r.role_id), ...(admins?.communityRoleIds ?? []), ...(server?.roleIds ?? [])])) as CommunityRoleGuid[];
+  const userIds = Array.from(new Set([...(admins?.userIds ?? []), ...(server ? [server.ownerId] : [])])) as UserGuid[];
   const query = { resourceType: "space", resourceId: spaceId, name: "readers" };
   const existing = await rootServer.memberGroups.getByName(query);
   if (existing) await existing.update({ userIds, communityRoleIds: roleIds });
@@ -179,7 +204,6 @@ export async function deleteSpaceGroup(spaceId: string) {
 
 /** Broadcast target for a space: everyone when it is open, else its readers. */
 export async function spaceAudience(spaceId: string) {
-  if (adminsUnset()) return "all" as const;
   const space = await get<SpaceRow>("SELECT * FROM spaces WHERE id = ?", [spaceId]);
   if (!space) return [];
   if (space.main || space.everyone_reads) return "all" as const;

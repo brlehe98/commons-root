@@ -141,7 +141,6 @@ const Shell: React.FC<{ me: GetMeResponse; spaces: Space[]; onChanged: () => voi
         spaces={spaces}
         types={types}
         tools={tools}
-        notice={me.adminsUnset ? t("app.adminsUnset") : undefined}
         at={route.view === "space" && route.spaceId === space.id ? (route.at ?? { kind: "home" }) : { kind: "home" }}
         search={route.view === "search" ? { query: route.query, spaceId: route.spaceId } : undefined}
         content={content}

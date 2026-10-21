@@ -7,7 +7,6 @@ export const es: Messages = {
   "app.loading": "Cargando…",
   "app.notifications": "Notificaciones",
   "app.settings": "Ajustes",
-  "app.adminsUnset": "Aún no hay administradores: todos pueden cambiar los ajustes. Elígelos en los ajustes de la app en Root.",
 
   // Deadlines and publication dates
   "due.inDays": { one: "En {count} día", other: "En {count} días" },

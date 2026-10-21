@@ -7,7 +7,6 @@ export const tr: Messages = {
   "app.loading": "Yükleniyor…",
   "app.notifications": "Bildirimler",
   "app.settings": "Ayarlar",
-  "app.adminsUnset": "Henüz yönetici yok: herkes ayarları değiştirebilir. Yöneticileri Root'taki uygulama ayarlarından seçin.",
 
   // Deadlines and publication dates
   "due.inDays": { one: "{count} gün sonra", other: "{count} gün sonra" },

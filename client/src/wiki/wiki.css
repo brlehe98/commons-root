@@ -596,9 +596,9 @@ td.infobox-add-row button.link { display: inline-flex; align-items: center; gap:
 /* A space's color, as in Newsroom: a line along the top bar, a light wash on
    the page and the menu, the open link and the card borders on hover. */
 .space.tinted .top-bar { box-shadow: inset 0 3px 0 var(--ws-color); }
-.space.tinted .space-main { background: color-mix(in srgb, var(--ws-color) 5%, var(--bg)); }
-.space.tinted .space-side { background: color-mix(in srgb, var(--ws-color) 7%, var(--bg)); }
-.space.tinted .side-link.on { background: color-mix(in srgb, var(--ws-color) 18%, transparent); }
+.space.tinted .space-main { background: color-mix(in srgb, var(--ws-color) 2%, var(--bg)); }
+.space.tinted .space-side { background: color-mix(in srgb, var(--ws-color) 3%, var(--bg)); }
+.space.tinted .side-link.on { background: color-mix(in srgb, var(--ws-color) 12%, transparent); }
 .space.tinted .side-link.on > svg { color: var(--ws-color); }
 .space.tinted .page-card:hover { border-color: var(--ws-color); }
 .space.tinted .wiki-page .page-title, .space.tinted .home .page-title { border-bottom-color: color-mix(in srgb, var(--ws-color) 45%, var(--border)); }

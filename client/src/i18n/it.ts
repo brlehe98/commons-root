@@ -7,7 +7,6 @@ export const it: Messages = {
   "app.loading": "Caricamento…",
   "app.notifications": "Notifiche",
   "app.settings": "Impostazioni",
-  "app.adminsUnset": "Nessun amministratore ancora: tutti possono modificare le impostazioni. Sceglili nelle impostazioni dell'app in Root.",
 
   // Deadlines and publication dates
   "due.inDays": { one: "Tra {count} giorno", other: "Tra {count} giorni" },

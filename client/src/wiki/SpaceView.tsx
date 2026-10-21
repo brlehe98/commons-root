@@ -44,7 +44,6 @@ type Props = {
   tools: BarTool[];
   /** A view of the app shown in place of the space's own (settings, reports). */
   content?: React.ReactNode;
-  notice?: string;
 };
 
 const MENU_KEY = "commons.menuPinned";
@@ -77,7 +76,7 @@ function useMenuPinned(): [boolean, (pinned: boolean) => void] {
  * side (categories, recent changes…), and the home page, a page or a list
  * in the middle.
  */
-const SpaceView: React.FC<Props> = ({ space, spaces, types, at, search, tools, content, notice }) => {
+const SpaceView: React.FC<Props> = ({ space, spaces, types, at, search, tools, content }) => {
   const { go } = useNav();
   const { value: categories = [], reload } = useLoaded(`categories:${space.id}`, () => wiki.listCategories({ spaceId: space.id }).then((r) => r.categories), {
     spaceId: space.id,
@@ -286,7 +285,6 @@ const SpaceView: React.FC<Props> = ({ space, spaces, types, at, search, tools, c
       {side}
       {sideOpen && <div className="side-scrim" onClick={() => setSideOpen(false)} />}
       <main className="space-main">
-        {notice && <div className="banner">{notice}</div>}
         {problem && (
           <div className="banner error" onClick={() => setProblem(null)}>
             {problem}
