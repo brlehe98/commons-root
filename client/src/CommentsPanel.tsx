@@ -20,8 +20,9 @@ import {
   threadsAt,
   threadsMap,
 } from "./editor/comments";
-import { cachedName, colorForUser, loadNames } from "./users";
+import { cachedName, loadNames } from "./users";
 import { locale, t } from "./i18n";
+import UserName, { withUser } from "./ui/UserName";
 import { confirmDialog } from "./ui/dialog";
 
 export type Draft = { from: number; to: number; quote: string };
@@ -169,7 +170,7 @@ const CommentsPanel: React.FC<Props> = ({ docId, editor, ydoc, userId, canCommen
           {th.messages.map((m) => (
             <div key={m.id} className="message">
               <div className="who">
-                <span className="dot" style={{ background: colorForUser(m.authorId) }} /> {cachedName(m.authorId)}
+                <UserName id={m.authorId} />
                 <span className="when">{formatTime(m.createdAt)}</span>
                 {m.authorId === userId && th.messages.length > 1 && m.id !== th.messages[0].id && (
                   <button className="icon small" title={t("comments.deleteReply")} onClick={(e) => (e.stopPropagation(), deleteMessage(ydoc, th.id, m.id))}>
@@ -222,14 +223,16 @@ const CommentsPanel: React.FC<Props> = ({ docId, editor, ydoc, userId, canCommen
                 <blockquote>{th.quote}</blockquote>
                 {th.messages.map((m) => (
                   <div key={m.id} className="message">
-                    <div className="who">{cachedName(m.authorId)}</div>
+                    <div className="who">
+                      <UserName id={m.authorId} />
+                    </div>
                     <div className="body">
                       <MentionText body={m.body} names={(m.mentions ?? []).map(cachedName)} />
                     </div>
                   </div>
                 ))}
                 <div className="row">
-                  <span className="hint">{t("comments.resolvedBy", { name: cachedName(th.resolvedBy) })}</span>
+                  <span className="hint">{withUser(t("comments.resolvedBy", { name: "\u0001" }), th.resolvedBy)}</span>
                   {(canEdit || th.authorId === userId) && (
                     <button title={t("comments.reopenTitle")} onClick={() => reopenThread(ydoc, th.id)}>
                       <RotateCcw size={14} /> {t("comments.reopen")}

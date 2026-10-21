@@ -1,10 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import type { Editor } from "@tiptap/core";
-import { Bell, BellOff, ChevronDown, Languages } from "lucide-react";
+import { Bell, BellOff, BookOpen, ChevronDown, Flag, FolderTree, Hash, History, Languages, Lightbulb, Link2, Pencil } from "lucide-react";
 import { AccessLevel, Category, Community, Page, PageType, ReportKind, Revision, Space } from "@commons-root/gen-shared";
 import Menu, { MenuItem } from "../ui/Menu";
 import { confirmDialog, formDialog } from "../ui/dialog";
-import { cachedName, loadNames } from "../users";
+import { loadNames } from "../users";
 import { errorText, formatDate, LANGS, langName, loadContent, pathOf, PMNode, typeOf, useLoaded, wiki } from "./api";
 import { NavLink, pageRoute, useNav } from "./nav";
 import WikiText, { sectionId } from "./WikiText";
@@ -12,6 +12,8 @@ import { outline } from "./outline";
 import Infobox from "./Infobox";
 import PageEdit, { TitleInput, useLiveHeadings, usePageDraft } from "./PageEdit";
 import { ContentsButton, ContentsColumn, useContentsPinned } from "./Contents";
+import UserName, { withUser } from "../ui/UserName";
+import CategoryIcon from "./CategoryIcon";
 import { locale, t } from "../i18n";
 
 type Tab = "read" | "edit" | "history";
@@ -50,7 +52,16 @@ const PageLayout: React.FC<Props & { page: Page; reload: () => void }> = ({ spac
   const reading = tab === "read" || (tab === "edit" && !canSuggest);
   const editLabel = !published ? t("page.create") : canEdit ? t("page.edit") : t("page.suggest");
   const at = (next: Tab, extra?: { section?: { index: number; text: string } }) =>
-    replace({ view: "space", spaceId: space.id, at: { kind: "page", pageId: page.id, tab: next === "read" ? undefined : next, ...extra } });
+    replace({
+      view: "space",
+      spaceId: space.id,
+      at: {
+        kind: "page",
+        pageId: page.id,
+        tab: next === "read" ? undefined : next,
+        ...extra,
+      },
+    });
 
   // The published text, for reading.
   const [content, setContent] = useState<Content | null>(null);
@@ -67,10 +78,7 @@ const PageLayout: React.FC<Props & { page: Page; reload: () => void }> = ({ spac
   const [editor, setEditor] = useState<Editor | null>(null);
   const live = useLiveHeadings(editing ? editor : null);
   const readHeadings = useMemo(() => (content ? outline(content.json).headings : []), [content]);
-  const readTargets = useCallback(
-    () => readHeadings.map((_, i) => document.getElementById(sectionId(i))).filter((el): el is HTMLElement => !!el),
-    [readHeadings],
-  );
+  const readTargets = useCallback(() => readHeadings.map((_, i) => document.getElementById(sectionId(i))).filter((el): el is HTMLElement => !!el), [readHeadings]);
   const headings = editing ? live.headings : reading && content ? readHeadings : [];
   const targets = editing ? live.targets : readTargets;
   const [pinned, setPinned] = useContentsPinned();
@@ -79,7 +87,14 @@ const PageLayout: React.FC<Props & { page: Page; reload: () => void }> = ({ spac
   const report = async (kind: ReportKind) => {
     const answer = await formDialog(
       kind === ReportKind.REPORT_ERROR ? t("report.reportError") : t("report.suggestAddition"),
-      [{ key: "text", label: t("report.text"), long: true, placeholder: t("report.textHint") }],
+      [
+        {
+          key: "text",
+          label: t("report.text"),
+          long: true,
+          placeholder: t("report.textHint"),
+        },
+      ],
       { ok: t("report.send") },
     );
     if (!answer?.text.trim()) return;
@@ -107,12 +122,19 @@ const PageLayout: React.FC<Props & { page: Page; reload: () => void }> = ({ spac
             value: String(page.community),
             options: [
               { value: String(Community.NONE), label: t("community.none") },
-              { value: String(Community.SUGGEST), label: t("community.suggest") },
+              {
+                value: String(Community.SUGGEST),
+                label: t("community.suggest"),
+              },
               { value: String(Community.EDIT), label: t("community.edit") },
             ],
           },
         ]);
-        if (answer) await wiki.setCommunity({ id: page.id, community: Number(answer.community) as Community });
+        if (answer)
+          await wiki.setCommunity({
+            id: page.id,
+            community: Number(answer.community) as Community,
+          });
         reload();
       } else if (action === "language") {
         const answer = await formDialog(t("page.languageTitle"), [
@@ -129,11 +151,21 @@ const PageLayout: React.FC<Props & { page: Page; reload: () => void }> = ({ spac
         if (!targets.length) return setProblem(t("page.noMoveTarget"));
         const answer = await formDialog(
           t("page.moveTitle"),
-          [{ key: "space", label: t("page.moveTo"), options: targets.map((s) => ({ value: s.id, label: s.name })) }],
+          [
+            {
+              key: "space",
+              label: t("page.moveTo"),
+              options: targets.map((s) => ({ value: s.id, label: s.name })),
+            },
+          ],
           { ok: t("page.move") },
         );
         if (!answer) return;
-        await wiki.movePage({ id: page.id, spaceId: answer.space, categoryId: "" });
+        await wiki.movePage({
+          id: page.id,
+          spaceId: answer.space,
+          categoryId: "",
+        });
         replace(pageRoute(answer.space, page.id));
       } else if (action === "translate") {
         const taken = new Set([page.lang, ...page.translations.map((tr) => tr.lang)]);
@@ -142,8 +174,19 @@ const PageLayout: React.FC<Props & { page: Page; reload: () => void }> = ({ spac
         const answer = await formDialog(
           t("page.translateTitle"),
           [
-            { key: "lang", label: t("page.language"), options: free.map((code) => ({ value: code, label: langName(code) })) },
-            { key: "title", label: t("page.titleIn"), value: page.publishedTitle || page.title },
+            {
+              key: "lang",
+              label: t("page.language"),
+              options: free.map((code) => ({
+                value: code,
+                label: langName(code),
+              })),
+            },
+            {
+              key: "title",
+              label: t("page.titleIn"),
+              value: page.publishedTitle || page.title,
+            },
           ],
           { ok: t("page.translate") },
         );
@@ -158,7 +201,15 @@ const PageLayout: React.FC<Props & { page: Page; reload: () => void }> = ({ spac
         });
         if (created.page) go(pageRoute(space.id, created.page.id, "edit"));
       } else if (action === "delete") {
-        if (!(await confirmDialog(t("page.confirmDelete", { title: page.publishedTitle || page.title }), { ok: t("common.delete"), danger: true }))) return;
+        if (
+          !(await confirmDialog(
+            t("page.confirmDelete", {
+              title: page.publishedTitle || page.title,
+            }),
+            { ok: t("common.delete"), danger: true },
+          ))
+        )
+          return;
         await wiki.deletePage({ id: page.id });
         replace({ view: "space", spaceId: space.id });
       }
@@ -168,9 +219,19 @@ const PageLayout: React.FC<Props & { page: Page; reload: () => void }> = ({ spac
   };
 
   const publish = async () => {
-    const answer = await formDialog(t("page.publishTitle"), [{ key: "note", label: t("page.publishNote"), placeholder: t("page.publishNoteHint") }], {
-      ok: t("page.publish"),
-    });
+    const answer = await formDialog(
+      t("page.publishTitle"),
+      [
+        {
+          key: "note",
+          label: t("page.publishNote"),
+          placeholder: t("page.publishNoteHint"),
+        },
+      ],
+      {
+        ok: t("page.publish"),
+      },
+    );
     if (!answer) return;
     try {
       await wiki.publish({ id: page.id, note: answer.note.trim() });
@@ -182,22 +243,57 @@ const PageLayout: React.FC<Props & { page: Page; reload: () => void }> = ({ spac
   };
 
   const tools: (MenuItem | "separator")[] = [
-    { key: "follow", label: page.following ? t("page.unfollow") : t("page.follow"), onSelect: follow },
+    {
+      key: "follow",
+      label: page.following ? t("page.unfollow") : t("page.follow"),
+      onSelect: follow,
+    },
     ...(published
       ? [
-          { key: "error", label: t("report.reportError"), onSelect: () => report(ReportKind.REPORT_ERROR) },
-          { key: "addition", label: t("report.suggestAddition"), onSelect: () => report(ReportKind.REPORT_ADDITION) },
+          {
+            key: "error",
+            label: t("report.reportError"),
+            onSelect: () => report(ReportKind.REPORT_ERROR),
+          },
+          {
+            key: "addition",
+            label: t("report.suggestAddition"),
+            onSelect: () => report(ReportKind.REPORT_ADDITION),
+          },
         ]
       : []),
     ...(page.canPublish
       ? [
           "separator" as const,
-          { key: "language", label: t("page.languageTitle"), hint: edit.draft.lang ? langName(edit.draft.lang) : t("page.anyLanguage"), onSelect: () => settings("language") },
-          { key: "community", label: t("page.communityTitle"), hint: communityLabel(page.community), onSelect: () => settings("community") },
-          { key: "translate", label: t("page.translateTitle"), onSelect: () => settings("translate") },
-          { key: "move", label: t("page.moveTitle"), onSelect: () => settings("move") },
+          {
+            key: "language",
+            label: t("page.languageTitle"),
+            hint: edit.draft.lang ? langName(edit.draft.lang) : t("page.anyLanguage"),
+            onSelect: () => settings("language"),
+          },
+          {
+            key: "community",
+            label: t("page.communityTitle"),
+            hint: communityLabel(page.community),
+            onSelect: () => settings("community"),
+          },
+          {
+            key: "translate",
+            label: t("page.translateTitle"),
+            onSelect: () => settings("translate"),
+          },
+          {
+            key: "move",
+            label: t("page.moveTitle"),
+            onSelect: () => settings("move"),
+          },
           "separator" as const,
-          { key: "delete", label: t("page.delete"), danger: true, onSelect: () => settings("delete") },
+          {
+            key: "delete",
+            label: t("page.delete"),
+            danger: true,
+            onSelect: () => settings("delete"),
+          },
         ]
       : []),
   ];
@@ -209,19 +305,21 @@ const PageLayout: React.FC<Props & { page: Page; reload: () => void }> = ({ spac
   let body: React.ReactNode;
   if (editing) {
     body = (
-      <PageEdit
-        page={page}
-        types={types}
-        categories={categories}
-        edit={edit}
-        focus={section ?? null}
-        onPublish={publish}
-        onError={setProblem}
-        onEditor={setEditor}
-      />
+      <PageEdit page={page} types={types} categories={categories} edit={edit} focus={section ?? null} onPublish={publish} onError={setProblem} onEditor={setEditor} />
     );
   } else if (tab === "history") {
-    body = <PageHistory page={page} onOpen={(id) => go({ view: "space", spaceId: space.id, at: { kind: "page", pageId: page.id, revisionId: id || undefined } })} />;
+    body = (
+      <PageHistory
+        page={page}
+        onOpen={(id) =>
+          go({
+            view: "space",
+            spaceId: space.id,
+            at: { kind: "page", pageId: page.id, revisionId: id || undefined },
+          })
+        }
+      />
+    );
   } else if (!published) {
     body = (
       <div className="empty-page">
@@ -254,14 +352,32 @@ const PageLayout: React.FC<Props & { page: Page; reload: () => void }> = ({ spac
           <footer className="catlinks">
             {path.length > 0 && (
               <div className="catlinks-row">
-                <NavLink className="catlinks-label" to={{ view: "space", spaceId: space.id, at: { kind: "category", categoryId: path[path.length - 1].id } }}>
-                  {t("read.category")}
+                <NavLink
+                  className="catlinks-label"
+                  to={{
+                    view: "space",
+                    spaceId: space.id,
+                    at: {
+                      kind: "category",
+                      categoryId: path[path.length - 1].id,
+                    },
+                  }}
+                >
+                  <FolderTree size={14} /> {t("read.category")}
                 </NavLink>
                 <span>
                   {path.map((c, i) => (
                     <React.Fragment key={c.id}>
                       {i > 0 && <span className="catlinks-sep"> › </span>}
-                      <NavLink to={{ view: "space", spaceId: space.id, at: { kind: "category", categoryId: c.id } }}>{c.name}</NavLink>
+                      <NavLink
+                        to={{
+                          view: "space",
+                          spaceId: space.id,
+                          at: { kind: "category", categoryId: c.id },
+                        }}
+                      >
+                        <CategoryIcon category={c} size={13} /> {c.name}
+                      </NavLink>
                     </React.Fragment>
                   ))}
                 </span>
@@ -269,14 +385,29 @@ const PageLayout: React.FC<Props & { page: Page; reload: () => void }> = ({ spac
             )}
             {page.tags.length > 0 && (
               <div className="catlinks-row">
-                <NavLink className="catlinks-label" to={{ view: "space", spaceId: space.id, at: { kind: "tags" } }}>
-                  {t("read.tags")}
+                <NavLink
+                  className="catlinks-label"
+                  to={{
+                    view: "space",
+                    spaceId: space.id,
+                    at: { kind: "tags" },
+                  }}
+                >
+                  <Hash size={14} /> {t("read.tags")}
                 </NavLink>
                 <span>
                   {page.tags.map((tag, i) => (
                     <React.Fragment key={tag}>
                       {i > 0 && <span className="catlinks-sep"> | </span>}
-                      <NavLink to={{ view: "space", spaceId: space.id, at: { kind: "tag", tag } }}>{tag}</NavLink>
+                      <NavLink
+                        to={{
+                          view: "space",
+                          spaceId: space.id,
+                          at: { kind: "tag", tag },
+                        }}
+                      >
+                        {tag}
+                      </NavLink>
                     </React.Fragment>
                   ))}
                 </span>
@@ -286,7 +417,9 @@ const PageLayout: React.FC<Props & { page: Page; reload: () => void }> = ({ spac
         )}
         {page.backlinks.length > 0 && (
           <details className="backlinks">
-            <summary>{t("read.whatLinksHere", { count: page.backlinks.length })}</summary>
+            <summary>
+              <Link2 size={14} /> {t("read.whatLinksHere", { count: page.backlinks.length })}
+            </summary>
             <ul>
               {page.backlinks.map((b) => (
                 <li key={b.id}>
@@ -322,7 +455,11 @@ const PageLayout: React.FC<Props & { page: Page; reload: () => void }> = ({ spac
                   <>
                     <Languages size={16} />
                     <span className="page-langs-label">
-                      {page.translations.length ? t("page.languagesCount", { count: page.translations.length + 1 }) : t("page.addLanguages")}
+                      {page.translations.length
+                        ? t("page.languagesCount", {
+                            count: page.translations.length + 1,
+                          })
+                        : t("page.addLanguages")}
                     </span>
                     <ChevronDown size={14} />
                   </>
@@ -335,7 +472,14 @@ const PageLayout: React.FC<Props & { page: Page; reload: () => void }> = ({ spac
                     onSelect: () => go(pageRoute(space.id, tr.pageId)),
                   })),
                   ...(page.canPublish
-                    ? [...(page.translations.length ? ["separator" as const] : []), { key: "add", label: t("page.translateTitle"), onSelect: () => settings("translate") }]
+                    ? [
+                        ...(page.translations.length ? ["separator" as const] : []),
+                        {
+                          key: "add",
+                          label: t("page.translateTitle"),
+                          onSelect: () => settings("translate"),
+                        },
+                      ]
                     : []),
                 ]}
               />
@@ -352,15 +496,15 @@ const PageLayout: React.FC<Props & { page: Page; reload: () => void }> = ({ spac
             </div>
             <div className="tabs-right" role="tablist">
               <button role="tab" aria-selected={reading} className={reading ? "page-tab on" : "page-tab"} onClick={() => at("read")}>
-                {t("page.read")}
+                <BookOpen size={15} /> {t("page.read")}
               </button>
               {canSuggest && (
                 <button role="tab" aria-selected={editing} className={editing ? "page-tab on" : "page-tab"} onClick={() => at("edit")}>
-                  {editLabel}
+                  <Pencil size={15} /> {editLabel}
                 </button>
               )}
               <button role="tab" aria-selected={tab === "history"} className={tab === "history" ? "page-tab on" : "page-tab"} onClick={() => at("history")}>
-                {t("page.history")}
+                <History size={15} /> {t("page.history")}
               </button>
               <button className="icon page-follow" title={page.following ? t("page.unfollow") : t("page.follow")} aria-pressed={page.following} onClick={follow}>
                 {page.following ? <BellOff size={16} /> : <Bell size={16} />}
@@ -398,7 +542,11 @@ const PageLayout: React.FC<Props & { page: Page; reload: () => void }> = ({ spac
 const communityLabel = (c: Community) => (c === Community.EDIT ? t("community.edit") : c === Community.SUGGEST ? t("community.suggest") : t("community.none"));
 
 /** The line at the bottom of a page: when it was published, by whom, and how to point out a problem. */
-const PageStamp: React.FC<{ page: Page; onEdit?: () => void; onReport: (kind: ReportKind) => void }> = ({ page, onEdit, onReport }) => {
+const PageStamp: React.FC<{
+  page: Page;
+  onEdit?: () => void;
+  onReport: (kind: ReportKind) => void;
+}> = ({ page, onEdit, onReport }) => {
   const [, setNames] = useState(0);
   useEffect(() => {
     if (page.publishedBy) loadNames([page.publishedBy]).then(() => setNames((n) => n + 1));
@@ -406,7 +554,13 @@ const PageStamp: React.FC<{ page: Page; onEdit?: () => void; onReport: (kind: Re
   return (
     <div className="page-stamp">
       <p>
-        {t("read.lastPublished", { date: formatDate(page.publishedAt), name: cachedName(page.publishedBy) })}
+        {withUser(
+          t("read.lastPublished", {
+            date: formatDate(page.publishedAt),
+            name: "\u0001",
+          }),
+          page.publishedBy,
+        )}
         {onEdit && page.draftChanged && (
           <>
             {" "}
@@ -418,11 +572,11 @@ const PageStamp: React.FC<{ page: Page; onEdit?: () => void; onReport: (kind: Re
       </p>
       <p className="page-stamp-links">
         <button className="link" onClick={() => onReport(ReportKind.REPORT_ERROR)}>
-          {t("report.reportError")}
+          <Flag size={14} /> {t("report.reportError")}
         </button>
         <span aria-hidden> · </span>
         <button className="link" onClick={() => onReport(ReportKind.REPORT_ADDITION)}>
-          {t("report.suggestAddition")}
+          <Lightbulb size={14} /> {t("report.suggestAddition")}
         </button>
       </p>
     </div>
@@ -430,7 +584,10 @@ const PageStamp: React.FC<{ page: Page; onEdit?: () => void; onReport: (kind: Re
 };
 
 /** The publications of the page, newest first, as Wikipedia lists its history. Draft versions are in the editor's own history. */
-const PageHistory: React.FC<{ page: Page; onOpen: (revisionId: string) => void }> = ({ page, onOpen }) => {
+const PageHistory: React.FC<{
+  page: Page;
+  onOpen: (revisionId: string) => void;
+}> = ({ page, onOpen }) => {
   const [revisions, setRevisions] = useState<Revision[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [, setNames] = useState(0);
@@ -454,9 +611,14 @@ const PageHistory: React.FC<{ page: Page; onOpen: (revisionId: string) => void }
           {revisions.map((r, i) => (
             <li key={String(r.id)}>
               <button className="link revision-date" onClick={() => onOpen(i === 0 ? "" : String(r.id))}>
-                {new Date(Number(r.createdAt)).toLocaleString(locale(), { dateStyle: "medium", timeStyle: "short" })}
+                {new Date(Number(r.createdAt)).toLocaleString(locale(), {
+                  dateStyle: "medium",
+                  timeStyle: "short",
+                })}
               </button>
-              <span className="revision-author">{cachedName(r.authorId)}</span>
+              <span className="revision-author">
+                <UserName id={r.authorId} />
+              </span>
               {i === 0 && <span className="revision-current">{t("history.currentPublication")}</span>}
               {r.note && <span className="revision-note">({r.note})</span>}
               {r.title !== (revisions[i + 1]?.title ?? r.title) && <span className="revision-note">{t("history.renamed", { title: r.title })}</span>}

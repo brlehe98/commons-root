@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { ArrowDown, ArrowUp, Check, Pencil, Plus, Search, Trash2, X } from "lucide-react";
+import { ArrowDown, ArrowUp, Check, Clock, Folder, Link2, Pencil, Plus, Search, Star, Trash2, X } from "lucide-react";
 import { AccessLevel, Category, PageSummary, PageType, Space, Widget, WidgetKind } from "@commons-root/gen-shared";
 import DocEditor from "../DocEditor";
 import Menu from "../ui/Menu";
@@ -46,7 +46,10 @@ const Home: React.FC<Props> = ({ space, types, categories }) => {
   const save = async () => {
     if (!editing) return;
     try {
-      await wiki.saveHome({ spaceId: space.id, widgets: editing.map((w) => ({ ...w, pages: [] })) });
+      await wiki.saveHome({
+        spaceId: space.id,
+        widgets: editing.map((w) => ({ ...w, pages: [] })),
+      });
       setEditing(null);
       reload();
     } catch (err) {
@@ -77,7 +80,11 @@ const Home: React.FC<Props> = ({ space, types, categories }) => {
                     <Plus size={15} /> {t("home.addBlock")}
                   </>
                 }
-                items={KINDS.map((k) => ({ key: String(k.kind), label: k.label(), onSelect: () => setEditing([...editing, blank(k.kind)]) }))}
+                items={KINDS.map((k) => ({
+                  key: String(k.kind),
+                  label: k.label(),
+                  onSelect: () => setEditing([...editing, blank(k.kind)]),
+                }))}
               />
               <button onClick={() => setEditing(null)}>{t("common.cancel")}</button>
               <button className="primary" onClick={save}>
@@ -128,10 +135,28 @@ const Home: React.FC<Props> = ({ space, types, categories }) => {
   );
 };
 
-const WidgetView: React.FC<{ widget: Widget; space: Space; types: PageType[]; categories: Category[] }> = ({ widget: w, space, types, categories }) => {
+const WidgetView: React.FC<{
+  widget: Widget;
+  space: Space;
+  types: PageType[];
+  categories: Category[];
+}> = ({ widget: w, space, types, categories }) => {
   const { go } = useNav();
   const [query, setQuery] = useState("");
-  const title = w.title ? <h2 className="widget-title">{w.title}</h2> : null;
+  // Each kind of block has its icon beside its title, so the home reads at a glance.
+  const icon = {
+    [WidgetKind.WIDGET_FEATURED]: <Star size={17} />,
+    [WidgetKind.WIDGET_RECENT]: <Clock size={17} />,
+    [WidgetKind.WIDGET_LIST]: <Folder size={17} />,
+    [WidgetKind.WIDGET_LINKS]: <Link2 size={17} />,
+    [WidgetKind.WIDGET_SEARCH]: <Search size={17} />,
+  }[w.kind as number];
+  const heading = (text: string) => (
+    <h2 className="widget-title">
+      {icon} {text}
+    </h2>
+  );
+  const title = w.title ? heading(w.title) : null;
   switch (w.kind) {
     case WidgetKind.WIDGET_TEXT:
       return (
@@ -162,7 +187,7 @@ const WidgetView: React.FC<{ widget: Widget; space: Space; types: PageType[]; ca
     case WidgetKind.WIDGET_LINKS:
       return (
         <>
-          {title ?? <h2 className="widget-title">{t("widget.links")}</h2>}
+          {title ?? heading(t("widget.links"))}
           <ul className="widget-links">
             {w.links.map((l, i) => (
               <li key={i}>
@@ -177,21 +202,25 @@ const WidgetView: React.FC<{ widget: Widget; space: Space; types: PageType[]; ca
     case WidgetKind.WIDGET_FEATURED:
       return (
         <>
-          {title ?? <h2 className="widget-title">{t("widget.featured")}</h2>}
+          {title ?? heading(t("widget.featured"))}
           <PageList pages={w.pages} types={types} categories={categories} empty={t("widget.noFeatured")} />
         </>
       );
     default: {
       // Recent pages, or a category's or tag's pages.
       const category = categories.find((c) => c.id === w.categoryId);
-      const fallback = w.kind === WidgetKind.WIDGET_RECENT ? t("widget.recent") : category?.name ?? w.tag;
+      const fallback = w.kind === WidgetKind.WIDGET_RECENT ? t("widget.recent") : (category?.name ?? w.tag);
       const more =
         w.kind === WidgetKind.WIDGET_LIST && (category || w.tag)
-          ? { view: "space" as const, spaceId: space.id, at: category ? { kind: "category" as const, categoryId: category.id } : { kind: "tag" as const, tag: w.tag } }
+          ? {
+              view: "space" as const,
+              spaceId: space.id,
+              at: category ? { kind: "category" as const, categoryId: category.id } : { kind: "tag" as const, tag: w.tag },
+            }
           : null;
       return (
         <>
-          {title ?? <h2 className="widget-title">{fallback}</h2>}
+          {title ?? heading(fallback)}
           <PageList pages={w.pages} types={types} categories={categories} empty={t("widget.noPages")} />
           {more && w.pages.length >= w.count && (
             <NavLink className="widget-more" to={more}>
@@ -205,12 +234,12 @@ const WidgetView: React.FC<{ widget: Widget; space: Space; types: PageType[]; ca
 };
 
 /** The settings of one block while the home page is being arranged. */
-const WidgetEditor: React.FC<{ widget: Widget; space: Space; categories: Category[]; onChange: (w: Widget) => void }> = ({
-  widget: w,
-  space,
-  categories,
-  onChange,
-}) => (
+const WidgetEditor: React.FC<{
+  widget: Widget;
+  space: Space;
+  categories: Category[];
+  onChange: (w: Widget) => void;
+}> = ({ widget: w, space, categories, onChange }) => (
   <div className="widget-editor">
     <label className="detail">
       <span>{t("home.blockTitle")}</span>
@@ -231,7 +260,16 @@ const WidgetEditor: React.FC<{ widget: Widget; space: Space; categories: Categor
       <div className="detail-row">
         <label className="detail">
           <span>{t("page.category")}</span>
-          <select value={w.categoryId} onChange={(e) => onChange({ ...w, categoryId: e.target.value, tag: e.target.value ? "" : w.tag })}>
+          <select
+            value={w.categoryId}
+            onChange={(e) =>
+              onChange({
+                ...w,
+                categoryId: e.target.value,
+                tag: e.target.value ? "" : w.tag,
+              })
+            }
+          >
             {categoryOptions(categories, t("home.anyCategory")).map((o) => (
               <option key={o.value} value={o.value}>
                 {o.label}
@@ -253,12 +291,22 @@ const WidgetEditor: React.FC<{ widget: Widget; space: Space; categories: Categor
             <input
               value={l.label}
               placeholder={t("home.linkLabel")}
-              onChange={(e) => onChange({ ...w, links: w.links.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)) })}
+              onChange={(e) =>
+                onChange({
+                  ...w,
+                  links: w.links.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)),
+                })
+              }
             />
             <input
               value={l.url}
               placeholder="https://"
-              onChange={(e) => onChange({ ...w, links: w.links.map((x, j) => (j === i ? { ...x, url: e.target.value } : x)) })}
+              onChange={(e) =>
+                onChange({
+                  ...w,
+                  links: w.links.map((x, j) => (j === i ? { ...x, url: e.target.value } : x)),
+                })
+              }
             />
             <button className="icon" title={t("home.removeLink")} onClick={() => onChange({ ...w, links: w.links.filter((_, j) => j !== i) })}>
               <X size={15} />
@@ -277,7 +325,11 @@ const WidgetEditor: React.FC<{ widget: Widget; space: Space; categories: Categor
 );
 
 /** Picks the pages a Featured block shows, by searching their titles. */
-const FeaturedPicker: React.FC<{ widget: Widget; spaceId: string; onChange: (w: Widget) => void }> = ({ widget: w, spaceId, onChange }) => {
+const FeaturedPicker: React.FC<{
+  widget: Widget;
+  spaceId: string;
+  onChange: (w: Widget) => void;
+}> = ({ widget: w, spaceId, onChange }) => {
   const [query, setQuery] = useState("");
   const [found, setFound] = useState<PageSummary[]>([]);
   // Titles of the pages already chosen, kept as they are found.

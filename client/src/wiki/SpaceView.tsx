@@ -7,6 +7,7 @@ import {
   Clock,
   Dices,
   FilePen,
+  Folder,
   FolderPlus,
   Hash,
   Home as HomeIcon,
@@ -29,6 +30,8 @@ import TopBar, { BarTool } from "./TopBar";
 import AllPages from "./AllPages";
 import Search from "./Search";
 import { useBackButton } from "../ui/backButton";
+import CategoryIcon from "./CategoryIcon";
+import StylePicker from "../ui/StylePicker";
 import { t } from "../i18n";
 
 type Props = {
@@ -90,7 +93,16 @@ const SpaceView: React.FC<Props> = ({ space, spaces, types, at, search, tools, c
   const randomPage = async () => {
     setSideOpen(false);
     try {
-      const { pages } = await wiki.listPages({ spaceId: space.id, categoryId: "", deep: false, tag: "", typeId: "", drafts: false, recent: false, limit: 0 });
+      const { pages } = await wiki.listPages({
+        spaceId: space.id,
+        categoryId: "",
+        deep: false,
+        tag: "",
+        typeId: "",
+        drafts: false,
+        recent: false,
+        limit: 0,
+      });
       const list = pages.filter((p) => p.publishedAt > 0n);
       if (!list.length) return setProblem(t("space.noPages"));
       go(pageRoute(space.id, list[Math.floor(Math.random() * list.length)].id));
@@ -104,8 +116,17 @@ const SpaceView: React.FC<Props> = ({ space, spaces, types, at, search, tools, c
       t("space.newPage"),
       [
         { key: "title", label: t("page.title") },
-        { key: "type", label: t("page.type"), options: types.map((tp) => ({ value: tp.id, label: tp.name })) },
-        { key: "category", label: t("page.category"), value: categoryId, options: categoryOptions(categories) },
+        {
+          key: "type",
+          label: t("page.type"),
+          options: types.map((tp) => ({ value: tp.id, label: tp.name })),
+        },
+        {
+          key: "category",
+          label: t("page.category"),
+          value: categoryId,
+          options: categoryOptions(categories),
+        },
       ],
       { ok: t("space.create") },
     );
@@ -129,16 +150,32 @@ const SpaceView: React.FC<Props> = ({ space, spaces, types, at, search, tools, c
     const name = (await promptDialog(parentId ? t("category.newSub") : t("category.new")))?.trim();
     if (!name) return;
     try {
-      const { category } = await wiki.saveCategory({ id: "", spaceId: space.id, parentId, name });
+      const { category } = await wiki.saveCategory({
+        id: "",
+        spaceId: space.id,
+        parentId,
+        name,
+        icon: "",
+        color: "",
+      });
       reload();
-      if (category) go({ view: "space", spaceId: space.id, at: { kind: "category", categoryId: category.id } });
+      if (category)
+        go({
+          view: "space",
+          spaceId: space.id,
+          at: { kind: "category", categoryId: category.id },
+        });
     } catch (err) {
       setProblem(errorText(err));
     }
   };
 
   const side = (
-    <aside className={sideOpen ? "space-side open" : "space-side"} aria-label={t("space.mainMenu")} onClick={(e) => (e.target as HTMLElement).closest("a") && setSideOpen(false)}>
+    <aside
+      className={sideOpen ? "space-side open" : "space-side"}
+      aria-label={t("space.mainMenu")}
+      onClick={(e) => (e.target as HTMLElement).closest("a") && setSideOpen(false)}
+    >
       <div className="side-top">
         {t("space.mainMenu")}
         <button className="icon" title={t("common.close")} onClick={() => setSideOpen(false)}>
@@ -182,58 +219,62 @@ const SpaceView: React.FC<Props> = ({ space, spaces, types, at, search, tools, c
   let main: React.ReactNode;
   if (content) main = content;
   else if (search) main = <Search query={search.query} spaceId={search.spaceId} spaces={spaces} types={types} />;
-  else switch (at.kind) {
-    case "page":
-      main = (
-        <PageView
-          key={at.pageId}
-          space={space}
-          spaces={spaces}
-          types={types}
-          categories={categories}
-          pageId={at.pageId}
-          tab={at.tab}
-          revisionId={at.revisionId}
-          section={at.section}
-        />
-      );
-      break;
-    case "category":
-      main = (
-        <CategoryView
-          key={at.categoryId}
-          space={space}
-          types={types}
-          categories={categories}
-          categoryId={at.categoryId}
-          onChanged={reload}
-          onNewPage={() => newPage(at.categoryId)}
-          onNewSub={() => newCategory(at.categoryId)}
-          onError={setProblem}
-        />
-      );
-      break;
-    case "tags":
-      main = <TagsView space={space} />;
-      break;
-    case "tag":
-      main = <TagView key={at.tag} space={space} types={types} categories={categories} tag={at.tag} />;
-      break;
-    case "drafts":
-      main = <DraftsView space={space} types={types} categories={categories} />;
-      break;
-    case "recent":
-      main = <RecentView space={space} types={types} categories={categories} />;
-      break;
-    case "all":
-      main = <AllPages space={space} types={types} categories={categories} />;
-      break;
-    default:
-      main = <Home key={space.id} space={space} types={types} categories={categories} />;
-  }
+  else
+    switch (at.kind) {
+      case "page":
+        main = (
+          <PageView
+            key={at.pageId}
+            space={space}
+            spaces={spaces}
+            types={types}
+            categories={categories}
+            pageId={at.pageId}
+            tab={at.tab}
+            revisionId={at.revisionId}
+            section={at.section}
+          />
+        );
+        break;
+      case "category":
+        main = (
+          <CategoryView
+            key={at.categoryId}
+            space={space}
+            types={types}
+            categories={categories}
+            categoryId={at.categoryId}
+            onChanged={reload}
+            onNewPage={() => newPage(at.categoryId)}
+            onNewSub={() => newCategory(at.categoryId)}
+            onError={setProblem}
+          />
+        );
+        break;
+      case "tags":
+        main = <TagsView space={space} />;
+        break;
+      case "tag":
+        main = <TagView key={at.tag} space={space} types={types} categories={categories} tag={at.tag} />;
+        break;
+      case "drafts":
+        main = <DraftsView space={space} types={types} categories={categories} />;
+        break;
+      case "recent":
+        main = <RecentView space={space} types={types} categories={categories} />;
+        break;
+      case "all":
+        main = <AllPages space={space} types={types} categories={categories} />;
+        break;
+      default:
+        main = <Home key={space.id} space={space} types={types} categories={categories} />;
+    }
 
   return (
-    <div className={pinned ? "space" : "space menu-hidden"}>
+    <div
+      className={`space${pinned ? "" : " menu-hidden"}${space.color ? " tinted" : ""}`}
+      style={space.color ? ({ "--ws-color": space.color } as React.CSSProperties) : undefined}
+    >
       <TopBar
         space={space}
         spaces={spaces}
@@ -258,13 +299,13 @@ const SpaceView: React.FC<Props> = ({ space, spaces, types, at, search, tools, c
 };
 
 /** Categories with their subcategories; the open one's branch stays unfolded. */
-const CategoryTree: React.FC<{ categories: Category[]; parentId: string; spaceId: string; at: SpaceAt; depth: number }> = ({
-  categories,
-  parentId,
-  spaceId,
-  at,
-  depth,
-}) => {
+const CategoryTree: React.FC<{
+  categories: Category[];
+  parentId: string;
+  spaceId: string;
+  at: SpaceAt;
+  depth: number;
+}> = ({ categories, parentId, spaceId, at, depth }) => {
   const openPath = at.kind === "category" ? pathOf(categories, at.categoryId).map((c) => c.id) : [];
   const [unfolded, setUnfolded] = useState<Set<string>>(new Set());
   const list = childrenOf(categories, parentId);
@@ -295,9 +336,13 @@ const CategoryTree: React.FC<{ categories: Category[]; parentId: string; spaceId
               )}
               <NavLink
                 className={at.kind === "category" && at.categoryId === c.id ? "side-link on" : "side-link"}
-                to={{ view: "space", spaceId, at: { kind: "category", categoryId: c.id } }}
+                to={{
+                  view: "space",
+                  spaceId,
+                  at: { kind: "category", categoryId: c.id },
+                }}
               >
-                {c.name}
+                <CategoryIcon category={c} size={14} /> {c.name}
               </NavLink>
             </span>
             {open && <CategoryTree categories={categories} parentId={c.id} spaceId={spaceId} at={at} depth={depth + 1} />}
@@ -318,13 +363,22 @@ const CategoryView: React.FC<{
   onNewSub: () => void;
   onError: (message: string) => void;
 }> = ({ space, types, categories, categoryId, onChanged, onNewPage, onNewSub, onError }) => {
-  const { go, replace } = useNav();
+  const { replace } = useNav();
   const category = categories.find((c) => c.id === categoryId);
   const { value: pages } = useLoaded(
     `category:${categoryId}`,
     () =>
       wiki
-        .listPages({ spaceId: space.id, categoryId, deep: false, tag: "", typeId: "", drafts: false, recent: false, limit: 0 })
+        .listPages({
+          spaceId: space.id,
+          categoryId,
+          deep: false,
+          tag: "",
+          typeId: "",
+          drafts: false,
+          recent: false,
+          limit: 0,
+        })
         .then((r) => r.pages),
     { spaceId: space.id },
   );
@@ -344,12 +398,31 @@ const CategoryView: React.FC<{
       <nav className="crumbs">
         {path.slice(0, -1).map((c) => (
           <React.Fragment key={c.id}>
-            <NavLink to={{ view: "space", spaceId: space.id, at: { kind: "category", categoryId: c.id } }}>{c.name}</NavLink> ›{" "}
+            <NavLink
+              to={{
+                view: "space",
+                spaceId: space.id,
+                at: { kind: "category", categoryId: c.id },
+              }}
+            >
+              {c.name}
+            </NavLink>{" "}
+            ›{" "}
           </React.Fragment>
         ))}
       </nav>
       <header className="list-head">
-        <h1 className="page-title">
+        <h1 className="page-title category-title">
+          {canEdit ? (
+            <StylePicker
+              icon={category.icon}
+              color={category.color}
+              fallback={<Folder size={18} />}
+              onChange={(style) => wiki.saveCategory({ ...category, ...style }).then(onChanged)}
+            />
+          ) : (
+            <CategoryIcon category={category} size={22} />
+          )}
           <span className="title-kind">{t("category.label")}</span> {category.name}
         </h1>
         <div className="list-actions">
@@ -358,7 +431,11 @@ const CategoryView: React.FC<{
             title={following ? t("category.unfollow") : t("category.follow")}
             onClick={() =>
               wiki
-                .follow({ kind: "category", id: categoryId, follow: !following })
+                .follow({
+                  kind: "category",
+                  id: categoryId,
+                  follow: !following,
+                })
                 .then(reloadFollow)
                 .catch((err) => onError(errorText(err)))
             }
@@ -380,10 +457,15 @@ const CategoryView: React.FC<{
                     label: t("category.rename"),
                     onSelect: async () => {
                       const name = (await promptDialog(t("category.rename"), category.name))?.trim();
-                      if (name && name !== category.name) act(() => wiki.saveCategory({ id: category.id, spaceId: space.id, parentId: category.parentId, name }));
+                      if (name && name !== category.name) act(() => wiki.saveCategory({ ...category, name }));
                     },
                   },
-                  { key: "sub", label: t("category.newSub"), icon: <FolderPlus size={15} />, onSelect: onNewSub },
+                  {
+                    key: "sub",
+                    label: t("category.newSub"),
+                    icon: <FolderPlus size={15} />,
+                    onSelect: onNewSub,
+                  },
                   {
                     key: "move",
                     label: t("category.move"),
@@ -394,8 +476,22 @@ const CategoryView: React.FC<{
                       const walk = (id: string) => childrenOf(categories, id).forEach((c) => (below.add(c.id), walk(c.id)));
                       walk(category.id);
                       const options = categoryOptions(categories, t("category.top")).filter((o) => o.value !== category.id && !below.has(o.value));
-                      const answer = await formDialog(t("category.move"), [{ key: "parent", label: t("category.under"), value: category.parentId, options }]);
-                      if (answer && answer.parent !== category.parentId) act(() => wiki.moveCategory({ id: category.id, parentId: answer.parent, beforeId: "" }));
+                      const answer = await formDialog(t("category.move"), [
+                        {
+                          key: "parent",
+                          label: t("category.under"),
+                          value: category.parentId,
+                          options,
+                        },
+                      ]);
+                      if (answer && answer.parent !== category.parentId)
+                        act(() =>
+                          wiki.moveCategory({
+                            id: category.id,
+                            parentId: answer.parent,
+                            beforeId: "",
+                          }),
+                        );
                     },
                   },
                   "separator",
@@ -407,7 +503,18 @@ const CategoryView: React.FC<{
                     onSelect: async () => {
                       if (!(await confirmDialog(t("category.confirmDelete", { name: category.name }), { ok: t("common.delete"), danger: true }))) return;
                       await act(() => wiki.deleteCategory({ id: category.id }));
-                      replace(category.parentId ? { view: "space", spaceId: space.id, at: { kind: "category", categoryId: category.parentId } } : { view: "space", spaceId: space.id });
+                      replace(
+                        category.parentId
+                          ? {
+                              view: "space",
+                              spaceId: space.id,
+                              at: {
+                                kind: "category",
+                                categoryId: category.parentId,
+                              },
+                            }
+                          : { view: "space", spaceId: space.id },
+                      );
                     },
                   },
                 ]}
@@ -419,19 +526,19 @@ const CategoryView: React.FC<{
       {subs.length > 0 && (
         <section className="subcategories">
           <h2>{t("category.subcategories")}</h2>
-          <ul>
+          <ul className="subcategory-chips">
             {subs.map((c) => (
               <li key={c.id}>
-                <a
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    go({ view: "space", spaceId: space.id, at: { kind: "category", categoryId: c.id } });
+                <NavLink
+                  className="tag-chip"
+                  to={{
+                    view: "space",
+                    spaceId: space.id,
+                    at: { kind: "category", categoryId: c.id },
                   }}
                 >
-                  {c.name}
-                </a>{" "}
-                <span className="hint">({c.pageCount})</span>
+                  <CategoryIcon category={c} size={14} /> {c.name} <span className="hint">{c.pageCount}</span>
+                </NavLink>
               </li>
             ))}
           </ul>
@@ -448,11 +555,21 @@ const TagsView: React.FC<{ space: Space }> = ({ space }) => {
   const max = Math.max(1, ...(tags ?? []).map((x) => x.count));
   return (
     <div className="tags-view">
-      <h1 className="page-title">{t("space.tags")}</h1>
+      <h1 className="page-title">
+        <Hash size={24} /> {t("space.tags")}
+      </h1>
       {tags && !tags.length && <p className="hint list-empty">{t("tags.empty")}</p>}
       <div className="tag-cloud">
         {(tags ?? []).map((x) => (
-          <NavLink key={x.tag} className="tag-chip" to={{ view: "space", spaceId: space.id, at: { kind: "tag", tag: x.tag } }}>
+          <NavLink
+            key={x.tag}
+            className="tag-chip"
+            to={{
+              view: "space",
+              spaceId: space.id,
+              at: { kind: "tag", tag: x.tag },
+            }}
+          >
             <span style={{ fontSize: `${0.85 + (0.5 * x.count) / max}em` }}>{x.tag}</span> <span className="tag-count">{x.count}</span>
           </NavLink>
         ))}
@@ -461,10 +578,27 @@ const TagsView: React.FC<{ space: Space }> = ({ space }) => {
   );
 };
 
-const TagView: React.FC<{ space: Space; types: PageType[]; categories: Category[]; tag: string }> = ({ space, types, categories, tag }) => {
+const TagView: React.FC<{
+  space: Space;
+  types: PageType[];
+  categories: Category[];
+  tag: string;
+}> = ({ space, types, categories, tag }) => {
   const { value: pages } = useLoaded(
     `tag:${space.id}:${tag}`,
-    () => wiki.listPages({ spaceId: space.id, categoryId: "", deep: false, tag, typeId: "", drafts: false, recent: false, limit: 0 }).then((r) => r.pages),
+    () =>
+      wiki
+        .listPages({
+          spaceId: space.id,
+          categoryId: "",
+          deep: false,
+          tag,
+          typeId: "",
+          drafts: false,
+          recent: false,
+          limit: 0,
+        })
+        .then((r) => r.pages),
     { spaceId: space.id },
   );
   return (
@@ -478,30 +612,66 @@ const TagView: React.FC<{ space: Space; types: PageType[]; categories: Category[
 };
 
 /** The pages published last, newest first. */
-const RecentView: React.FC<{ space: Space; types: PageType[]; categories: Category[] }> = ({ space, types, categories }) => {
+const RecentView: React.FC<{
+  space: Space;
+  types: PageType[];
+  categories: Category[];
+}> = ({ space, types, categories }) => {
   const { value: pages } = useLoaded(
     `recent:${space.id}`,
-    () => wiki.listPages({ spaceId: space.id, categoryId: "", deep: false, tag: "", typeId: "", drafts: false, recent: true, limit: 50 }).then((r) => r.pages),
+    () =>
+      wiki
+        .listPages({
+          spaceId: space.id,
+          categoryId: "",
+          deep: false,
+          tag: "",
+          typeId: "",
+          drafts: false,
+          recent: true,
+          limit: 50,
+        })
+        .then((r) => r.pages),
     { spaceId: space.id },
   );
   return (
     <div className="recent-view">
-      <h1 className="page-title">{t("space.recent")}</h1>
+      <h1 className="page-title">
+        <Clock size={24} /> {t("space.recent")}
+      </h1>
       <p className="hint">{t("recent.hint")}</p>
       <PageList pages={pages ?? []} types={types} categories={categories} empty={t("recent.empty")} />
     </div>
   );
 };
 
-const DraftsView: React.FC<{ space: Space; types: PageType[]; categories: Category[] }> = ({ space, types, categories }) => {
+const DraftsView: React.FC<{
+  space: Space;
+  types: PageType[];
+  categories: Category[];
+}> = ({ space, types, categories }) => {
   const { value: pages } = useLoaded(
     `drafts:${space.id}`,
-    () => wiki.listPages({ spaceId: space.id, categoryId: "", deep: false, tag: "", typeId: "", drafts: true, recent: true, limit: 0 }).then((r) => r.pages),
+    () =>
+      wiki
+        .listPages({
+          spaceId: space.id,
+          categoryId: "",
+          deep: false,
+          tag: "",
+          typeId: "",
+          drafts: true,
+          recent: true,
+          limit: 0,
+        })
+        .then((r) => r.pages),
     { spaceId: space.id },
   );
   return (
     <div className="drafts-view">
-      <h1 className="page-title">{t("space.drafts")}</h1>
+      <h1 className="page-title">
+        <FilePen size={24} /> {t("space.drafts")}
+      </h1>
       <p className="hint">{t("drafts.hint")}</p>
       <PageList pages={pages ?? []} types={types} categories={categories} empty={t("drafts.empty")} drafts />
     </div>

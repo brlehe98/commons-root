@@ -61,7 +61,7 @@ import { DocSync, SyncStatus } from "./sync";
 import { undo, redo } from "./editor/collaboration";
 import { buildExtensions } from "./editor/extensions";
 import { listSuggestions, countWords } from "./editor/suggestionList";
-import { cachedName, colorForUser, loadNames } from "./users";
+import { loadNames } from "./users";
 import CommentsPanel, { Draft } from "./CommentsPanel";
 import VersionHistory from "./VersionHistory";
 import { detectLanguage, Language, LANGUAGES, languageName, Readability, readability } from "./editor/readability";
@@ -79,6 +79,7 @@ import { commentDraftKey } from "./editor/commentDraft";
 import { HIGHLIGHTS, TEXT_COLORS } from "./editor/palette";
 import { locale, t } from "./i18n";
 import { formDialog, promptDialog } from "./ui/dialog";
+import UserName from "./ui/UserName";
 import type { PageSummary } from "@commons-root/gen-shared";
 
 // variant "reader": the text alone, read-only (the style guide window).
@@ -546,10 +547,7 @@ const ArticleEditor: React.FC<Props> = ({
               className={view.activeSuggestion === String(s.id) ? "suggestion active" : "suggestion"}
             >
               <div className="who">
-                <span className="avatar" style={{ background: colorForUser(s.author) }}>
-                  {cachedName(s.author).slice(0, 1).toUpperCase()}
-                </span>
-                {cachedName(s.author)}
+                <UserName id={s.author} />
               </div>
               {s.deleted && <del>{s.deleted}</del>}
               {s.inserted && <ins>{s.inserted}</ins>}

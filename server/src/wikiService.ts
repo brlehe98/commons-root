@@ -35,6 +35,8 @@ import {
   ListReportsResponse,
   ListRevisionsResponse,
   ListRolesResponse,
+  NameColorsRequest,
+  NameColorsResponse,
   ListSpacesResponse,
   ListTagsRequest,
   ListTagsResponse,
@@ -82,6 +84,7 @@ import {
   spaceAudience,
   SpaceRow,
   syncSpaceGroup,
+  rolesOf,
 } from "./access";
 import { deleteDoc, flushDoc, getDoc } from "./docStore";
 import { docToJson, jsonText, leadOf, linkedPages } from "./content";
@@ -132,7 +135,26 @@ const toSpace = (r: SpaceRow, level: AccessLevel): Space => ({
   everyoneReads: !!(r.main || r.everyone_reads),
 });
 
-type CategoryRow = { id: string; space_id: string; parent_id: string; name: string; position: number };
+type CategoryRow = { id: string; space_id: string; parent_id: string; name: string; position: number; icon: string; color: string };
+const toCategory = (r: CategoryRow, pageCount: number): Category => ({
+  id: r.id,
+  spaceId: r.space_id,
+  parentId: r.parent_id,
+  name: r.name,
+  position: r.position,
+  pageCount,
+  icon: r.icon,
+  color: r.color,
+});
+
+// Role colors change rarely: listed once a minute at most.
+let rolesCache: { roles: { id: string; colorHex: string }[]; expires: number } | null = null;
+async function communityRoles() {
+  if (rolesCache && rolesCache.expires > Date.now()) return rolesCache.roles;
+  const roles = await rootServer.community.communityRoles.list();
+  rolesCache = { roles, expires: Date.now() + 60_000 };
+  return roles;
+}
 
 // The page types a new community starts with; admins rename, change or delete them.
 const BASE_TYPES: { name: string; icon: string; fields: Omit<FieldDef, "id" | "icon">[]; sections: string[] }[] = [
@@ -388,6 +410,20 @@ export class WikiService extends WikiServiceBase {
     return OK;
   }
 
+  /** Each member's name color: their first role (in Root's order) that has a color. */
+  async nameColors(request: NameColorsRequest, client: Client): Promise<NameColorsResponse> {
+    rateLimit(client.userId, "nameColors");
+    const roles = (await communityRoles()).filter((r) => /^#[0-9a-fA-F]{3,8}$/.test(r.colorHex ?? ""));
+    const ids = Array.from(new Set(request.userIds.filter((id) => /^[A-Za-z0-9_-]{1,64}$/.test(id)))).slice(0, 50);
+    const colors = [];
+    for (const userId of ids) {
+      const mine = new Set(await rolesOf(userId as UserGuid));
+      const role = roles.find((r) => mine.has(r.id));
+      if (role) colors.push({ userId, color: role.colorHex });
+    }
+    return { colors };
+  }
+
   async listRoles(client: Client): Promise<ListRolesResponse> {
     await requireAdmin(client.userId);
     const roles = await rootServer.community.communityRoles.list();
@@ -404,7 +440,7 @@ export class WikiService extends WikiServiceBase {
       [request.spaceId],
     );
     return {
-      categories: rows.map((r) => ({ id: r.id, spaceId: r.space_id, parentId: r.parent_id, name: r.name, position: r.position, pageCount: r.n })),
+      categories: rows.map((r) => toCategory(r, r.n)),
     };
   }
 
@@ -415,7 +451,7 @@ export class WikiService extends WikiServiceBase {
       row = await get<CategoryRow>("SELECT * FROM categories WHERE id = ?", [request.id]);
       if (!row) throw new Error("This category no longer exists.");
       await requireLevel(client.userId, row.space_id, AccessLevel.EDIT);
-      await run("UPDATE categories SET name = ? WHERE id = ?", [name, row.id]);
+      await run("UPDATE categories SET name = ?, icon = ?, color = ? WHERE id = ?", [name, cleanIcon(request.icon), cleanColor(request.color), row.id]);
     } else {
       await requireLevel(client.userId, request.spaceId, AccessLevel.EDIT);
       await findSpace(request.spaceId);
@@ -425,18 +461,20 @@ export class WikiService extends WikiServiceBase {
         parent?.id ?? "",
       ]);
       const id = crypto.randomUUID();
-      await run("INSERT INTO categories (id, space_id, parent_id, name, position) VALUES (?, ?, ?, ?, ?)", [
+      await run("INSERT INTO categories (id, space_id, parent_id, name, position, icon, color) VALUES (?, ?, ?, ?, ?, ?, ?)", [
         id,
         request.spaceId,
         parent?.id ?? "",
         name,
         (max?.p ?? -1) + 1,
+        cleanIcon(request.icon),
+        cleanColor(request.color),
       ]);
       row = await get<CategoryRow>("SELECT * FROM categories WHERE id = ?", [id]);
     }
     const saved = (await get<CategoryRow>("SELECT * FROM categories WHERE id = ?", [row!.id]))!;
     this.spaceChanged(saved.space_id);
-    return { category: { id: saved.id, spaceId: saved.space_id, parentId: saved.parent_id, name: saved.name, position: saved.position, pageCount: 0 } };
+    return { category: toCategory(saved, 0) };
   }
 
   async moveCategory(request: MoveCategoryRequest, client: Client): Promise<Ack> {

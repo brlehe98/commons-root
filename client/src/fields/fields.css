@@ -1,7 +1,7 @@
 /* Fields, statuses and approvals (client/src/fields). */
 .card-fields { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
-.field-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; line-height: 1; padding: 3px 7px; border-radius: 999px; border: 1px solid var(--field-color); color: var(--field-color); background: color-mix(in srgb, var(--field-color) 10%, transparent); }
-button.field-badge { cursor: pointer; font: inherit; font-size: 12px; }
+.field-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; line-height: 1; padding: 3px 7px; border-radius: 999px; border: 1px solid var(--field-color); color: var(--field-color); background: color-mix(in srgb, var(--field-color) 10%, transparent); }
+button.field-badge { cursor: pointer; font: inherit; font-size: 13px; }
 button.field-badge:disabled { cursor: default; }
 .field-badge.active { background: var(--field-color); color: #fff; }
 .project-fields { display: flex; flex-direction: column; gap: 8px; padding: 10px 0; border-bottom: 1px solid var(--border); margin-bottom: 8px; }
@@ -9,7 +9,7 @@ button.field-badge:disabled { cursor: default; }
 .project-field-name { display: inline-flex; align-items: center; gap: 6px; min-width: 160px; color: var(--muted); }
 .field-options { display: inline-flex; flex-wrap: wrap; gap: 6px; }
 .field-text { min-width: 240px; }
-.field-error { color: #b91c1c; font-size: 13px; margin: 0; }
+.field-error { color: #b91c1c; font-size: 14px; margin: 0; }
 .approval-wait { margin: 0; }
 
 .fields-admin { display: flex; gap: 16px; align-items: flex-start; }
@@ -45,15 +45,15 @@ button.field-badge:disabled { cursor: default; }
 .mention { color: var(--accent, #2563eb); }
 .readability { white-space: nowrap; }
 .tiptap figure.figure-broken img { min-height: 60px; }
-.tiptap figure.figure-broken::before { content: attr(data-error); display: block; font-size: 13px; color: var(--muted); padding: 6px 0; }
+.tiptap figure.figure-broken::before { content: attr(data-error); display: block; font-size: 14px; color: var(--muted); padding: 6px 0; }
 
 /* Conditions on a field's approval or filler (Conditions.tsx). */
 .conditions { display: flex; flex-direction: column; gap: 6px; width: 100%; margin-top: 6px; }
 .condition-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0; }
 .condition-row select { max-width: 100%; min-width: 0; }
-.condition-word { font-size: 13px; color: var(--muted); }
+.condition-word { font-size: 14px; color: var(--muted); }
 .condition-options { display: flex; flex-wrap: wrap; gap: 4px; min-width: 0; }
-.condition-options .chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border: 1px solid var(--border); border-radius: 999px; font-size: 13px; overflow-wrap: anywhere; }
+.condition-options .chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border: 1px solid var(--border); border-radius: 999px; font-size: 14px; overflow-wrap: anywhere; }
 
 /* Keep the field form inside its Settings card at any width. A fieldset is
    as wide as its content by default (min-width: min-content), which made
@@ -72,9 +72,9 @@ button.field-badge:disabled { cursor: default; }
 
 /* Settings > Deadline reminders */
 .deadline-settings fieldset { border: none; padding: 0; margin: 12px 0 0; min-width: 0; }
-.deadline-settings legend { font-weight: 600; font-size: 13px; margin-bottom: 6px; padding: 0; }
+.deadline-settings legend { font-weight: 600; font-size: 14px; margin-bottom: 6px; padding: 0; }
 .deadline-settings .chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.deadline-settings .chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border: 1px solid var(--border); border-radius: 999px; font-size: 13px; cursor: pointer; }
+.deadline-settings .chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border: 1px solid var(--border); border-radius: 999px; font-size: 14px; cursor: pointer; }
 .deadline-settings .chip:has(input:checked) { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
 .deadline-settings > .row { display: flex; align-items: center; gap: 6px; margin-top: 12px; }
 .deadline-settings .section-actions { margin-top: auto; padding-top: 14px; }

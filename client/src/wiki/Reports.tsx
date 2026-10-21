@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { Check, RotateCcw } from "lucide-react";
+import { Check, Flag, RotateCcw } from "lucide-react";
 import { Report, ReportKind, Space } from "@commons-root/gen-shared";
-import { cachedName, loadNames } from "../users";
+import { loadNames } from "../users";
 import { errorText, spaceName, wiki } from "./api";
 import { NavLink, pageRoute } from "./nav";
+import { withUser } from "../ui/UserName";
 import { locale, t } from "../i18n";
 
 type Props = { spaces: Space[]; pageId?: string; onChanged: () => void };
@@ -38,7 +39,9 @@ const Reports: React.FC<Props> = ({ spaces, pageId = "", onChanged }) => {
 
   return (
     <div className="reports-view">
-      <h1 className="page-title">{t("reports.title")}</h1>
+      <h1 className="page-title">
+        <Flag size={24} /> {t("reports.title")}
+      </h1>
       {pageId && (
         <p className="hint">
           {t("reports.onePage")} <NavLink to={{ view: "reports" }}>{t("reports.showAll")}</NavLink>
@@ -67,8 +70,14 @@ const Reports: React.FC<Props> = ({ spaces, pageId = "", onChanged }) => {
             <p className="report-text">{r.text}</p>
             <div className="report-foot">
               <span className="hint">
-                {t("reports.by", { name: cachedName(r.authorId), date: new Date(Number(r.createdAt)).toLocaleDateString(locale(), { dateStyle: "medium" }) })}
-                {r.resolvedAt > 0n && ` · ${t("reports.resolvedBy", { name: cachedName(r.resolvedBy) })}`}
+                {withUser(
+                  t("reports.by", {
+                    name: "\u0001",
+                    date: new Date(Number(r.createdAt)).toLocaleDateString(locale(), { dateStyle: "medium" }),
+                  }),
+                  r.authorId,
+                )}
+                {r.resolvedAt > 0n && <> · {withUser(t("reports.resolvedBy", { name: "\u0001" }), r.resolvedBy)}</>}
               </span>
               {resolved ? (
                 <button onClick={() => resolve(r, false)}>

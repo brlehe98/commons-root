@@ -6,11 +6,12 @@ import { DOMSerializer } from "@tiptap/pm/model";
 import { historyServiceClient } from "@commons-root/gen-client";
 import { AccessLevel, Version } from "@commons-root/gen-shared";
 import { blockTexts, cleanDoc, diffTexts, restoreVersion, versionDoc } from "./editor/history";
-import { cachedName, loadNames } from "./users";
+import { loadNames } from "./users";
 import "./history.css";
 import { locale, t } from "./i18n";
 import { confirmDialog } from "./ui/dialog";
 import { tNodes } from "./i18n/nodes";
+import UserName from "./ui/UserName";
 import { ArrowLeft } from "lucide-react";
 
 type Props = {
@@ -209,7 +210,12 @@ export default function VersionHistory({ docId, editor, level, onClose }: Props)
               )}
               <span className="hint">
                 {when(v)}
-                {v.authorId && ` · ${cachedName(v.authorId)}`}
+                {v.authorId && (
+                  <>
+                    {" · "}
+                    <UserName id={v.authorId} />
+                  </>
+                )}
               </span>
             </li>
           ))}

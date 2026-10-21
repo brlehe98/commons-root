@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Category, PageType, Space } from "@commons-root/gen-shared";
+import { LayoutGrid } from "lucide-react";
 import PageList from "./PageList";
 import { categoryOptions, useLoaded, wiki } from "./api";
 import { t } from "../i18n";
@@ -14,14 +15,28 @@ const AllPages: React.FC<Props> = ({ space, types, categories }) => {
   const [recent, setRecent] = useState(false);
   const { value: pages } = useLoaded(
     `all:${space.id}:${typeId}:${categoryId}:${tag}:${recent}`,
-    () => wiki.listPages({ spaceId: space.id, categoryId, deep: true, tag, typeId, drafts: false, recent, limit: 0 }).then((r) => r.pages),
+    () =>
+      wiki
+        .listPages({
+          spaceId: space.id,
+          categoryId,
+          deep: true,
+          tag,
+          typeId,
+          drafts: false,
+          recent,
+          limit: 0,
+        })
+        .then((r) => r.pages),
     { spaceId: space.id },
   );
   const { value: tags = [] } = useLoaded(`tags:${space.id}`, () => wiki.listTags({ spaceId: space.id }).then((r) => r.tags), { spaceId: space.id });
 
   return (
     <div className="all-pages">
-      <h1 className="page-title">{t("space.allPages")}</h1>
+      <h1 className="page-title">
+        <LayoutGrid size={24} /> {t("space.allPages")}
+      </h1>
       <div className="filters">
         <label>
           <span>{t("page.type")}</span>

@@ -20,6 +20,8 @@ export const LIMITS = {
   reportActivity: { max: 60, windowMs: MINUTE },
   // Searching scans the published texts.
   search: { max: 60, windowMs: MINUTE },
+  // Each name color looks up the member's roles in Root.
+  nameColors: { max: 60, windowMs: MINUTE },
 } satisfies Record<string, Limit>;
 
 export type LimitedAction = keyof typeof LIMITS;

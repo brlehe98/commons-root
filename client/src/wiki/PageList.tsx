@@ -1,6 +1,7 @@
 import React from "react";
 import { Category, PageSummary, PageType } from "@commons-root/gen-shared";
 import FieldIcon from "../fields/FieldIcon";
+import CategoryIcon from "./CategoryIcon";
 import { NavLink, pageRoute } from "./nav";
 import { formatDate, typeOf } from "./api";
 import { t } from "../i18n";
@@ -34,7 +35,7 @@ const PageList: React.FC<Props> = ({ pages, types, empty, categories, spaceNames
     <ul className="page-cards">
       {pages.map((p) => {
         const type = typeOf(types, p.typeId);
-        const category = categories?.find((c) => c.id === p.categoryId)?.name;
+        const category = categories?.find((c) => c.id === p.categoryId);
         return (
           <li key={p.id}>
             <NavLink className="page-card" to={pageRoute(p.spaceId, p.id, drafts ? "edit" : undefined)}>
@@ -46,7 +47,11 @@ const PageList: React.FC<Props> = ({ pages, types, empty, categories, spaceNames
                     <FieldIcon name={type.icon} size={13} /> {type.name}
                   </span>
                 )}
-                {category && <span>{category}</span>}
+                {category && (
+                  <span>
+                    <CategoryIcon category={category} size={13} /> {category.name}
+                  </span>
+                )}
                 {spaceNames?.get(p.spaceId) && <span>{spaceNames.get(p.spaceId)}</span>}
                 {p.draftOnly ? <span className="page-card-draft">{t("page.neverPublished")}</span> : p.publishedAt > 0n && <span>{formatDate(p.publishedAt)}</span>}
               </span>

@@ -93,6 +93,18 @@ message ListRolesResponse {
   repeated Role roles = 1;
 }
 
+// Members' names are shown in the color of their highest colored role, as in Root.
+message NameColorsRequest {
+  repeated string userIds = 1;
+}
+message NameColor {
+  string userId = 1;
+  string color = 2;
+}
+message NameColorsResponse {
+  repeated NameColor colors = 1;
+}
+
 // ---------- Categories ----------
 
 message Category {
@@ -104,6 +116,9 @@ message Category {
   int32 position = 5;
   // Published pages directly in it.
   int32 pageCount = 6;
+  // A Lucide icon name and a #hex color, both optional.
+  string icon = 7;
+  string color = 8;
 }
 
 message ListCategoriesRequest {
@@ -119,6 +134,8 @@ message SaveCategoryRequest {
   string spaceId = 2;
   string parentId = 3;
   string name = 4;
+  string icon = 5;
+  string color = 6;
 }
 message SaveCategoryResponse {
   Category category = 1;
@@ -503,6 +520,7 @@ service WikiService {
   rpc GetAccess(GetAccessRequest) returns (GetAccessResponse);
   rpc SetAccess(SetAccessRequest) returns (Ack);
   rpc ListRoles(rootsdk.Void) returns (ListRolesResponse);
+  rpc NameColors(NameColorsRequest) returns (NameColorsResponse);
 
   rpc ListCategories(ListCategoriesRequest) returns (ListCategoriesResponse);
   rpc SaveCategory(SaveCategoryRequest) returns (SaveCategoryResponse);

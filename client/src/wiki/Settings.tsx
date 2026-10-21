@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { ArrowDown, ArrowLeft, ArrowUp, BookOpen, Globe, Layers, LayoutTemplate, Plus, ShieldCheck, Trash2, Users, X } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowUp, BookOpen, ChevronRight, Globe, Layers, LayoutTemplate, Plus, ShieldCheck, Trash2, Users, X } from "lucide-react";
 import { AccessLevel, FieldDef, FieldKind, PageType, Role, RoleAccess, Space } from "@commons-root/gen-shared";
 import SectionTitle from "../ui/SectionTitle";
 import StylePicker from "../ui/StylePicker";
@@ -82,11 +82,17 @@ const Settings: React.FC<Props> = ({ spaces, section = "spaces", onChanged }) =>
   );
 };
 
-const SpacesList: React.FC<{ spaces: Space[]; act: (fn: () => Promise<unknown>) => Promise<void>; onOpen: (id: string) => void }> = ({ spaces, act, onOpen }) => {
+const SpacesList: React.FC<{
+  spaces: Space[];
+  act: (fn: () => Promise<unknown>) => Promise<void>;
+  onOpen: (id: string) => void;
+}> = ({ spaces, act, onOpen }) => {
   const [roles, setRoles] = useState<Role[]>([]);
   const [name, setName] = useState("");
   const [roleId, setRoleId] = useState("");
   const [everyoneReads, setEveryoneReads] = useState(true);
+  // The new group's form opens on demand.
+  const [adding, setAdding] = useState(false);
   useEffect(() => {
     wiki
       .listRoles()
@@ -95,7 +101,16 @@ const SpacesList: React.FC<{ spaces: Space[]; act: (fn: () => Promise<unknown>) 
   }, []);
   // The main space stays first.
   const groups = spaces.filter((s) => !s.main);
-  const moveTo = (from: number, to: number) => act(() => wiki.reorderSpaces({ ids: reorder(groups.map((s) => s.id), from, to) }));
+  const moveTo = (from: number, to: number) =>
+    act(() =>
+      wiki.reorderSpaces({
+        ids: reorder(
+          groups.map((s) => s.id),
+          from,
+          to,
+        ),
+      }),
+    );
   const drag = useDragReorder(moveTo);
 
   return (
@@ -112,7 +127,9 @@ const SpacesList: React.FC<{ spaces: Space[]; act: (fn: () => Promise<unknown>) 
               <span className="ws-name">
                 {s.name} <span className="hint">{t("settings.mainSpace")}</span>
               </span>
-              <button onClick={() => onOpen(s.id)}>{t("admin.openSettings")}</button>
+              <button className="row-open" onClick={() => onOpen(s.id)}>
+                {t("admin.openSettings")} <ChevronRight size={15} />
+              </button>
             </div>
           ))}
         {groups.map((s, i) => (
@@ -128,47 +145,66 @@ const SpacesList: React.FC<{ spaces: Space[]; act: (fn: () => Promise<unknown>) 
             <button className="icon" disabled={i === groups.length - 1} title={t("common.moveDown")} onClick={() => moveTo(i, i + 1)}>
               <ArrowDown size={15} />
             </button>
-            <button onClick={() => onOpen(s.id)}>{t("admin.openSettings")}</button>
+            <button className="row-open" onClick={() => onOpen(s.id)}>
+              {t("admin.openSettings")} <ChevronRight size={15} />
+            </button>
           </div>
         ))}
-      </section>
-      <section>
-        <SectionTitle icon={<Users size={16} />}>{t("settings.newGroup")}</SectionTitle>
-        <p className="hint">{t("settings.newGroupHint")}</p>
-        <form
-          className="new-group"
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (!name.trim() || !roleId) return;
-            act(async () => {
-              const { space } = await wiki.saveSpace({ id: "", name: name.trim(), roleId, everyoneReads });
-              setName("");
-              if (space) onOpen(space.id);
-            });
-          }}
-        >
-          <label className="detail">
-            <span>{t("settings.groupName")}</span>
-            <input value={name} maxLength={80} onChange={(e) => setName(e.target.value)} />
-          </label>
-          <label className="detail">
-            <span>{t("settings.groupRole")}</span>
-            <select value={roleId} onChange={(e) => setRoleId(e.target.value)}>
-              <option value="">{t("settings.chooseRole")}</option>
-              {roles.map((r) => (
-                <option key={r.id} value={r.id}>
-                  {r.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="check">
-            <input type="checkbox" checked={everyoneReads} onChange={(e) => setEveryoneReads(e.target.checked)} /> {t("settings.everyoneReads")}
-          </label>
-          <button type="submit" className="primary" disabled={!name.trim() || !roleId}>
-            {t("admin.create")}
+        {!adding ? (
+          <button className="add-row" onClick={() => setAdding(true)}>
+            <Plus size={15} /> {t("settings.newGroup")}
           </button>
-        </form>
+        ) : (
+          <form
+            className="new-group"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!name.trim() || !roleId) return;
+              act(async () => {
+                const { space } = await wiki.saveSpace({
+                  id: "",
+                  name: name.trim(),
+                  roleId,
+                  everyoneReads,
+                });
+                setName("");
+                setAdding(false);
+                if (space) onOpen(space.id);
+              });
+            }}
+          >
+            <h3 className="sub-title">
+              <Users size={15} /> {t("settings.newGroup")}
+            </h3>
+            <p className="hint">{t("settings.newGroupHint")}</p>
+            <label className="detail">
+              <span>{t("settings.groupName")}</span>
+              <input value={name} maxLength={80} onChange={(e) => setName(e.target.value)} />
+            </label>
+            <label className="detail">
+              <span>{t("settings.groupRole")}</span>
+              <select value={roleId} onChange={(e) => setRoleId(e.target.value)}>
+                <option value="">{t("settings.chooseRole")}</option>
+                {roles.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="check">
+              <input type="checkbox" className="switch" checked={everyoneReads} onChange={(e) => setEveryoneReads(e.target.checked)} /> {t("settings.everyoneReads")}
+            </label>
+            <div className="row-actions">
+              <button type="button" onClick={() => setAdding(false)}>
+                {t("common.cancel")}
+              </button>
+              <button type="submit" className="primary" disabled={!name.trim() || !roleId}>
+                {t("admin.create")}
+              </button>
+            </div>
+          </form>
+        )}
       </section>
     </>
   );
@@ -207,7 +243,14 @@ const SpaceSettings: React.FC<{
             onBlur={(e) =>
               e.target.value.trim() &&
               e.target.value.trim() !== space.name &&
-              act(() => wiki.saveSpace({ id: space.id, name: e.target.value.trim(), roleId: "", everyoneReads: space.everyoneReads }))
+              act(() =>
+                wiki.saveSpace({
+                  id: space.id,
+                  name: e.target.value.trim(),
+                  roleId: "",
+                  everyoneReads: space.everyoneReads,
+                }),
+              )
             }
             onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
           />
@@ -223,8 +266,18 @@ const SpaceSettings: React.FC<{
           <label className="check">
             <input
               type="checkbox"
+              className="switch"
               checked={space.everyoneReads}
-              onChange={(e) => act(() => wiki.saveSpace({ id: space.id, name: space.name, roleId: "", everyoneReads: e.target.checked }))}
+              onChange={(e) =>
+                act(() =>
+                  wiki.saveSpace({
+                    id: space.id,
+                    name: space.name,
+                    roleId: "",
+                    everyoneReads: e.target.checked,
+                  }),
+                )
+              }
             />{" "}
             {t("settings.everyoneReads")}
           </label>
@@ -235,7 +288,10 @@ const SpaceSettings: React.FC<{
   );
 };
 
-const AccessEditor: React.FC<{ space: Space; onError: (msg: string) => void }> = ({ space, onError }) => {
+const AccessEditor: React.FC<{
+  space: Space;
+  onError: (msg: string) => void;
+}> = ({ space, onError }) => {
   const [roles, setRoles] = useState<RoleAccess[] | null>(null);
   const [saved, setSaved] = useState(true);
   useEffect(() => {
@@ -298,18 +354,28 @@ const AccessEditor: React.FC<{ space: Space; onError: (msg: string) => void }> =
 
 /** Kinds of pages: the fields of their infobox and the text a new page starts from. */
 // A type opens as a step forward, like a space: the back button returns to the list.
-const PageTypes: React.FC<{ act: (fn: () => Promise<unknown>) => Promise<void>; openId: string | null; onOpen: (id: string | null) => void }> = ({
-  act,
-  openId,
-  onOpen,
-}) => {
+const PageTypes: React.FC<{
+  act: (fn: () => Promise<unknown>) => Promise<void>;
+  openId: string | null;
+  onOpen: (id: string | null) => void;
+}> = ({ act, openId, onOpen }) => {
   const [types, setTypes] = useState<PageType[] | null>(null);
   const load = () => wiki.listPageTypes().then((r) => setTypes(r.types));
   useEffect(() => {
     load().catch(() => setTypes([]));
   }, []);
   const run = (fn: () => Promise<unknown>) => act(async () => (await fn(), await load()));
-  const moveTo = (from: number, to: number) => types && run(() => wiki.reorderPageTypes({ ids: reorder(types.map((x) => x.id), from, to) }));
+  const moveTo = (from: number, to: number) =>
+    types &&
+    run(() =>
+      wiki.reorderPageTypes({
+        ids: reorder(
+          types.map((x) => x.id),
+          from,
+          to,
+        ),
+      }),
+    );
   const drag = useDragReorder(moveTo);
   if (!types) return <section>{t("app.loading")}</section>;
   const open = types.find((x) => x.id === openId);
@@ -331,13 +397,21 @@ const PageTypes: React.FC<{ act: (fn: () => Promise<unknown>) => Promise<void>; 
           <button className="icon" disabled={i === types.length - 1} title={t("common.moveDown")} onClick={() => moveTo(i, i + 1)}>
             <ArrowDown size={15} />
           </button>
-          <button onClick={() => onOpen(tp.id)}>{t("admin.openSettings")}</button>
+          <button className="row-open" onClick={() => onOpen(tp.id)}>
+            {t("admin.openSettings")} <ChevronRight size={15} />
+          </button>
         </div>
       ))}
       <button
         onClick={() =>
           run(async () => {
-            const { type } = await wiki.savePageType({ id: "", name: t("settings.newType"), icon: "File", fields: [], position: 0 });
+            const { type } = await wiki.savePageType({
+              id: "",
+              name: t("settings.newType"),
+              icon: "File",
+              fields: [],
+              position: 0,
+            });
             if (type) onOpen(type.id);
           })
         }
@@ -348,7 +422,11 @@ const PageTypes: React.FC<{ act: (fn: () => Promise<unknown>) => Promise<void>; 
   );
 };
 
-const PageTypeEditor: React.FC<{ type: PageType; run: (fn: () => Promise<unknown>) => Promise<void>; onClose: () => void }> = ({ type, run, onClose }) => {
+const PageTypeEditor: React.FC<{
+  type: PageType;
+  run: (fn: () => Promise<unknown>) => Promise<void>;
+  onClose: () => void;
+}> = ({ type, run, onClose }) => {
   const [draft, setDraft] = useState<PageType>(type);
   const [dirty, setDirty] = useState(false);
   const change = (next: PageType) => {
@@ -360,8 +438,10 @@ const PageTypeEditor: React.FC<{ type: PageType; run: (fn: () => Promise<unknown
   const drag = useDragReorder(moveField);
   const save = () => run(() => wiki.savePageType(draft)).then(() => setDirty(false));
   const remove = async () =>
-    (await confirmDialog(t("settings.confirmDeleteType", { name: type.name }), { ok: t("common.delete"), danger: true })) &&
-    run(() => wiki.deletePageType({ id: type.id })).then(onClose);
+    (await confirmDialog(t("settings.confirmDeleteType", { name: type.name }), {
+      ok: t("common.delete"),
+      danger: true,
+    })) && run(() => wiki.deletePageType({ id: type.id })).then(onClose);
 
   return (
     <>
@@ -396,16 +476,49 @@ const PageTypeEditor: React.FC<{ type: PageType; run: (fn: () => Promise<unknown
                 className="field-options"
                 defaultValue={f.options.join(", ")}
                 placeholder={t("settings.choices")}
-                onBlur={(e) => setField(i, { ...f, options: e.target.value.split(",").map((s) => s.trim()).filter(Boolean) })}
+                onBlur={(e) =>
+                  setField(i, {
+                    ...f,
+                    options: e.target.value
+                      .split(",")
+                      .map((s) => s.trim())
+                      .filter(Boolean),
+                  })
+                }
               />
             )}
-            <button className="icon" title={t("settings.removeField")} onClick={() => change({ ...draft, fields: draft.fields.filter((_, j) => j !== i) })}>
+            <button
+              className="icon"
+              title={t("settings.removeField")}
+              onClick={() =>
+                change({
+                  ...draft,
+                  fields: draft.fields.filter((_, j) => j !== i),
+                })
+              }
+            >
               <X size={15} />
             </button>
           </div>
         ))}
         <div className="row-actions">
-          <button onClick={() => change({ ...draft, fields: [...draft.fields, { id: "", name: "", icon: "", kind: FieldKind.FIELD_TEXT, options: [] }] })}>
+          <button
+            onClick={() =>
+              change({
+                ...draft,
+                fields: [
+                  ...draft.fields,
+                  {
+                    id: "",
+                    name: "",
+                    icon: "",
+                    kind: FieldKind.FIELD_TEXT,
+                    options: [],
+                  },
+                ],
+              })
+            }
+          >
             <Plus size={15} /> {t("settings.addField")}
           </button>
           <span className="spacer" />
