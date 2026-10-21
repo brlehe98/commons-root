@@ -135,14 +135,13 @@ const toSpace = (r: SpaceRow, level: AccessLevel): Space => ({
 type CategoryRow = { id: string; space_id: string; parent_id: string; name: string; position: number };
 
 // The page types a new community starts with; admins rename, change or delete them.
-const BASE_TYPES: { name: string; icon: string; fields: Omit<FieldDef, "id">[]; sections: string[] }[] = [
+const BASE_TYPES: { name: string; icon: string; fields: Omit<FieldDef, "id" | "icon">[]; sections: string[] }[] = [
   {
     name: "Guide",
     icon: "BookOpen",
     fields: [
       { name: "Goal", kind: FieldKind.FIELD_TEXT, options: [] },
-      { name: "Level", kind: FieldKind.FIELD_CHOICE, options: ["Beginner", "Intermediate", "Advanced"] },
-      { name: "Time needed", kind: FieldKind.FIELD_TEXT, options: [] },
+      { name: "Who it's for", kind: FieldKind.FIELD_TEXT, options: [] },
     ],
     sections: ["Before you start", "Steps", "Tips"],
   },
@@ -212,7 +211,7 @@ export async function initWiki() {
     for (let i = 0; i < BASE_TYPES.length; i++) {
       const t = BASE_TYPES[i];
       const id = crypto.randomUUID();
-      const fields: FieldDef[] = t.fields.map((f) => ({ ...f, id: crypto.randomUUID() }));
+      const fields: FieldDef[] = t.fields.map((f) => ({ ...f, id: crypto.randomUUID(), icon: "" }));
       await run("INSERT INTO page_types (id, name, icon, fields, position) VALUES (?, ?, ?, ?, ?)", [id, t.name, t.icon, JSON.stringify(fields), i]);
       if (t.sections.length) await writeTemplate(id, t.sections);
     }
@@ -498,6 +497,7 @@ export class WikiService extends WikiServiceBase {
     const fields: FieldDef[] = request.fields.slice(0, FIELDS_MAX).map((f) => ({
       id: /^[A-Za-z0-9-]{1,64}$/.test(f.id) ? f.id : crypto.randomUUID(),
       name: cleanName(f.name, "A field"),
+      icon: cleanIcon(f.icon),
       kind: Object.values(FieldKind).includes(f.kind) ? f.kind : FieldKind.FIELD_TEXT,
       options:
         f.kind === FieldKind.FIELD_CHOICE

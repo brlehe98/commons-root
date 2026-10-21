@@ -185,9 +185,7 @@ span.page-tab.on { cursor: default; }
 .section-edit::after { content: " ]"; }
 .section-edit button.link { font-size: inherit; font-weight: 400; padding: 0; min-height: 0; vertical-align: baseline; }
 
-.wiki-read a, .references a, .catlinks a, .backlinks a, .page-item-title, .widget a, .crumbs a, .subcategories a { color: var(--link); text-decoration: none; }
-.wiki-read a:hover, .references a:hover, .catlinks a:hover, .backlinks a:hover, .page-item-title:hover, .widget a:hover, .crumbs a:hover, .subcategories a:hover { text-decoration: underline; text-underline-offset: 2px; }
-/* A page that does not exist yet, in red as on Wikipedia. */
+.wiki-read a, .references a, .catlinks a, .backlinks a, .wiki-read a:hover, .references a:hover, .catlinks a:hover, .backlinks a:hover, /* A page that does not exist yet, in red as on Wikipedia. */
 .wiki-read a.missing-link { color: var(--danger); cursor: default; }
 .wiki-read a.missing-link:hover { text-decoration: none; }
 /* Links that leave the app carry a small arrow. */
@@ -372,15 +370,6 @@ a.catlinks-label { color: var(--link); }
 .detail-row > .detail { flex: 1 1 160px; }
 
 /* ---------- Lists of pages ---------- */
-.page-list { list-style: none; margin: 0; padding: 0; }
-.page-item { padding: 12px 0; border-bottom: 1px solid var(--border); }
-.page-item:last-child { border-bottom: none; }
-.page-item-title { font-family: var(--font-serif); font-size: 18px; font-weight: 500; }
-.page-item-meta { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 2px; color: var(--muted); font-family: var(--font-ui); font-size: 12.5px; }
-.page-item-type { display: inline-flex; align-items: center; gap: 4px; }
-.page-item-draft { color: var(--warn); }
-.page-item-lead { margin: 4px 0 0; font-size: 15px; line-height: 1.5; color: color-mix(in srgb, var(--text) 85%, var(--muted)); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.page-item-lead mark { background: var(--comment, rgb(255 196 0 / 0.3)); color: inherit; border-radius: 2px; padding: 0 1px; }
 .list-empty { padding: 16px 0; }
 .list-head { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
 .list-head .page-title { flex: 1 1 260px; }
@@ -409,22 +398,12 @@ a.catlinks-label { color: var(--link); }
 .widget { min-width: 0; border: 1px solid var(--border); border-radius: 4px; padding: 14px 16px; background: var(--card); }
 .widget.wide { grid-column: 1 / -1; }
 .widget-title { font-family: var(--font-serif); font-weight: 500; font-size: 19px; margin: 0 0 8px; padding-bottom: 4px; border-bottom: 1px solid var(--border); }
-.widget .page-item { padding: 8px 0; }
-.widget .page-item-title { font-size: 16px; }
-.template-editor { margin-top: 8px; }
+.widget .widget .template-editor { margin-top: 8px; }
 .widget-search { display: flex; align-items: center; gap: 8px; font-family: var(--font-ui); }
 .widget-search input { flex: 1; min-width: 0; }
 .widget-search > svg { color: var(--muted); flex: none; }
 .widget-links { margin: 0; padding-left: 18px; line-height: 1.7; }
 .widget-more { display: inline-block; margin-top: 6px; font-family: var(--font-ui); font-size: 13.5px; }
-.featured { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
-.featured-card {
-  display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px;
-  color: var(--text); text-decoration: none; transition: border-color var(--motion-fast, 120ms) ease;
-}
-.featured-card:hover { border-color: var(--border-strong); }
-.featured-title { font-family: var(--font-serif); font-size: 16.5px; color: var(--link); }
-.featured-lead { font-size: 14px; color: var(--muted); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .home.editing .widget { border-style: dashed; }
 .widget-tools { display: flex; align-items: center; gap: 4px; margin: -4px 0 10px; font-family: var(--font-ui); font-size: 13px; }
 .widget-kind { font-weight: 600; flex: 1; }
@@ -472,7 +451,7 @@ a.catlinks-label { color: var(--link); }
 .drag-grip.placeholder { width: 15px; display: inline-block; }
 .field-row { display: flex; align-items: center; gap: 6px; margin: 6px 0; flex-wrap: wrap; }
 .field-row > input:first-of-type { flex: 1 1 160px; min-width: 0; }
-.field-row .field-options { flex: 1 1 100%; margin-left: 21px; }
+.field-row .field-options { flex: 1 1 100%; order: 1; margin-left: 21px; }
 .row-actions { display: flex; align-items: center; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
 .row-actions .spacer { flex: 1; }
 .row-actions > button { display: inline-flex; align-items: center; gap: 6px; }
@@ -487,8 +466,18 @@ a.catlinks-label { color: var(--link); }
 .page-card {
   display: flex; flex-direction: column; gap: 8px; height: 100%; box-sizing: border-box; padding: 14px 16px;
   border: 1px solid var(--border-strong); border-radius: 8px; background: var(--card); color: var(--text); text-decoration: none; font-family: var(--font-ui);
+  transition: transform var(--motion-fast, 120ms) ease, box-shadow var(--motion-fast, 120ms) ease, border-color var(--motion-fast, 120ms) ease;
 }
-.page-card:hover { border-color: var(--text); box-shadow: var(--shadow-sm); }
+/* Hover lifts the card; no colour wash or underline. */
+.page-card:hover { border-color: var(--text); box-shadow: var(--shadow-md); transform: translateY(-2px); text-decoration: none; }
+.page-card:active { transform: none; box-shadow: var(--shadow-sm); }
+.page-card:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
+.page-card-draft { color: var(--warn); }
+.page-card-lead mark { background: var(--comment, rgb(255 196 0 / 0.3)); color: inherit; border-radius: 2px; padding: 0 1px; }
+.widget .page-cards { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+.widget .page-card { background: var(--bg); padding: 12px 14px; }
+.widget .page-card-title { font-size: 17px; }
+@media (prefers-reduced-motion: reduce) { .page-card:hover { transform: none; } }
 .page-card-title { font-family: var(--font-serif); font-size: 19px; font-weight: 500; line-height: 1.3; color: var(--link); overflow-wrap: anywhere; }
 .page-card-lead { font-size: 14px; line-height: 1.45; color: var(--text); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .page-card-meta { margin-top: auto; display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 13px; color: var(--muted); }
@@ -569,4 +558,37 @@ a.catlinks-label { color: var(--link); }
 @media (max-width: 600px) {
   .admin .ws-row { flex-wrap: wrap; }
   .admin .ws-row .ws-name { white-space: normal; }
+}
+
+/* The infobox's row icons and the rows a page adds itself. */
+.infobox-label svg { vertical-align: -2px; margin-right: 2px; color: var(--muted); }
+.infobox-extra-name, .infobox-extra-value { display: flex; align-items: center; gap: 2px; min-width: 0; }
+.infobox-extra-name .infobox-input { font-weight: 600; }
+.infobox-extra-value > :first-child { flex: 1; min-width: 0; }
+.infobox-extra .icon-picker-button { min-height: 0; padding: 2px 3px; border-color: transparent; background: none; }
+.infobox-extra .icon-picker-button:hover:not(:disabled) { border-color: var(--border); }
+.infobox-extra button.icon { flex: none; padding: 2px; color: var(--muted); }
+td.infobox-add-row { text-align: center !important; border-top: 1px solid var(--border); }
+td.infobox-add-row button.link { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; }
+
+/* The page's toolbar stays on one line without scrolling: Publish keeps only
+   its icon when room runs short, and on phones the pen loses its chevron. */
+@container editor (max-width: 900px) {
+  .layout.wiki .publish-label { display: none; }
+}
+@container editor (max-width: 720px) {
+  .layout.wiki .tb-undo { display: none; }
+}
+@container editor (max-width: 600px) {
+  .layout.wiki .mode-menu .menu-trigger > svg:last-child { display: none; }
+  .layout.wiki .toolbar.split { gap: 4px; }
+  .layout.wiki .toolbar button.icon, .layout.wiki .toolbar .menu-trigger { padding: 5px; }
+}
+
+/* Phone: a field keeps its icon, name and remove button on one line, its kind under them. */
+@media (max-width: 600px) {
+  .field-row > select { order: 1; flex: 1 1 100%; margin-left: 21px; }
+  .field-row .field-options { order: 2; }
+  .admin .ws-row:has(.type-delete) { flex-wrap: nowrap; }
+  .type-delete .btn-label { display: none; }
 }

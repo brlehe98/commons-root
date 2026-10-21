@@ -43,8 +43,6 @@ button.primary { background: var(--accent); color: #fff; border-color: var(--acc
 .toolbar { display: flex; align-items: center; gap: 8px; padding: 8px 16px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
 .spacer { flex: 1; }
 .status { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); }
-.peers { display: flex; gap: 4px; }
-.peer { width: 26px; height: 26px; border-radius: 50%; color: #fff; display: grid; place-items: center; font-size: 13px; font-weight: 600; }
 .toggle { display: flex; align-items: center; gap: 6px; }
 .link-form { display: flex; gap: 4px; }
 
@@ -75,8 +73,6 @@ button.primary { background: var(--accent); color: #fff; border-color: var(--acc
 .tiptap figure.ProseMirror-selectednode img { outline: 3px solid var(--accent); }
 
 /* Remote cursors from y-prosemirror */
-.ProseMirror-yjs-cursor { position: relative; margin: 0 -1px; border-left: 2px solid; word-break: normal; pointer-events: none; }
-.ProseMirror-yjs-cursor > div { position: absolute; top: -1.15em; left: -2px; font-size: 11px; font-weight: 600; line-height: 1; color: #fff; padding: 2px 4px; border-radius: 3px 3px 3px 0; white-space: nowrap; user-select: none; }
 button.icon { display: inline-grid; place-items: center; padding: 5px; line-height: 0; }
 .toolbar button.icon { border-color: transparent; background: none; }
 .toolbar button.icon:hover { background: var(--panel); border-color: var(--border); }

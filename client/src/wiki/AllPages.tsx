@@ -1,8 +1,7 @@
 import React, { useState } from "react";
 import { Category, PageType, Space } from "@commons-root/gen-shared";
-import FieldIcon from "../fields/FieldIcon";
-import { categoryOptions, formatDate, typeOf, useLoaded, wiki } from "./api";
-import { NavLink, pageRoute } from "./nav";
+import PageList from "./PageList";
+import { categoryOptions, useLoaded, wiki } from "./api";
 import { t } from "../i18n";
 
 type Props = { space: Space; types: PageType[]; categories: Category[] };
@@ -19,7 +18,6 @@ const AllPages: React.FC<Props> = ({ space, types, categories }) => {
     { spaceId: space.id },
   );
   const { value: tags = [] } = useLoaded(`tags:${space.id}`, () => wiki.listTags({ spaceId: space.id }).then((r) => r.tags), { spaceId: space.id });
-  const categoryName = (id: string) => categories.find((c) => c.id === id)?.name;
 
   return (
     <div className="all-pages">
@@ -65,29 +63,7 @@ const AllPages: React.FC<Props> = ({ space, types, categories }) => {
           </select>
         </label>
       </div>
-      {pages && !pages.length && <p className="hint list-empty">{t("all.empty")}</p>}
-      <ul className="page-cards">
-        {(pages ?? []).map((p) => {
-          const type = typeOf(types, p.typeId);
-          return (
-            <li key={p.id}>
-              <NavLink className="page-card" to={pageRoute(space.id, p.id)}>
-                <span className="page-card-title">{p.title || t("page.untitled")}</span>
-                {p.lead && <span className="page-card-lead">{p.lead}</span>}
-                <span className="page-card-meta">
-                  {type && (
-                    <span>
-                      <FieldIcon name={type.icon} size={13} /> {type.name}
-                    </span>
-                  )}
-                  {categoryName(p.categoryId) && <span>{categoryName(p.categoryId)}</span>}
-                  {p.publishedAt > 0n && <span>{formatDate(p.publishedAt)}</span>}
-                </span>
-              </NavLink>
-            </li>
-          );
-        })}
-      </ul>
+      {pages && <PageList pages={pages} types={types} categories={categories} empty={t("all.empty")} />}
     </div>
   );
 };

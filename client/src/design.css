@@ -41,23 +41,25 @@
   background: var(--bg);
 }
 :root[data-theme="dark"] {
-  /* Root's own dark blue, so the app reads as part of Root. */
-  --bg: #0d1521;
-  --panel: #121a26;
-  --card: #172130;
-  --text: #f2f2f2;
-  --muted: #a7a7a8;
-  --border: #232c36;
-  --border-strong: #5d6b7d;
+  /* Root's own surfaces, whichever dark theme the member picked (Root dark,
+     Dark, OLED): Root writes them as --rootsdk-* variables. The fallbacks are
+     Root dark's values, for the first paint and the dev host. */
+  --bg: var(--rootsdk-background-primary, #0d1521);
+  --panel: var(--rootsdk-background-secondary, #121a26);
+  --card: color-mix(in srgb, var(--panel) 94%, #fff);
+  --text: var(--rootsdk-text-primary, #f2f2f2);
+  --muted: var(--rootsdk-text-secondary, #a7a7a8);
+  --border: var(--rootsdk-border, #232c36);
+  --border-strong: color-mix(in srgb, var(--border) 70%, #fff);
   --accent: #5aa7f0;
   --link: #6cb3f5;
-  --ink: #f2f2f2;
-  --on-ink: #0d1521;
+  --ink: var(--text);
+  --on-ink: var(--bg);
   --danger: #f4706a;
   --warn: #e88f3d;
   --ok: #49d6ac;
-  --desk: #07101b;
-  --paper: #121a26;
+  --desk: var(--rootsdk-background-tertiary, #07101b);
+  --paper: var(--panel);
   --hover: rgb(255 255 255 / 0.04);
   --selected: rgb(255 255 255 / 0.1);
   --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
@@ -295,7 +297,6 @@ input[type="color"]::-moz-color-swatch { border: none; border-radius: 50%; }
 .sync-state { font-size: 12px; color: var(--muted); padding: 0 6px; white-space: nowrap; }
 .sync-state.connecting { font-style: italic; }
 .sync-state.error { color: var(--danger); font-weight: 600; }
-.peer { width: 24px; height: 24px; font-size: 12px; box-shadow: 0 0 0 2px var(--bg); }
 .page { background: var(--desk); padding: 40px 24px; }
 .article .tiptap {
   max-width: 700px;

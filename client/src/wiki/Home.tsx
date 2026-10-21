@@ -4,7 +4,7 @@ import { AccessLevel, Category, PageSummary, PageType, Space, Widget, WidgetKind
 import DocEditor from "../DocEditor";
 import Menu from "../ui/Menu";
 import { categoryOptions, childrenOf, errorText, useLoaded, wiki } from "./api";
-import { NavLink, pageRoute, useNav } from "./nav";
+import { NavLink, useNav } from "./nav";
 import PageList from "./PageList";
 import { t } from "../i18n";
 
@@ -178,12 +178,7 @@ const WidgetView: React.FC<{ widget: Widget; space: Space; types: PageType[]; ca
       return (
         <>
           {title ?? <h2 className="widget-title">{t("widget.featured")}</h2>}
-          <div className="featured">
-            {w.pages.map((p) => (
-              <FeaturedCard key={p.id} page={p} />
-            ))}
-            {!w.pages.length && <p className="hint">{t("widget.noFeatured")}</p>}
-          </div>
+          <PageList pages={w.pages} types={types} categories={categories} empty={t("widget.noFeatured")} />
         </>
       );
     default: {
@@ -197,7 +192,7 @@ const WidgetView: React.FC<{ widget: Widget; space: Space; types: PageType[]; ca
       return (
         <>
           {title ?? <h2 className="widget-title">{fallback}</h2>}
-          <PageList pages={w.pages} types={types} empty={t("widget.noPages")} />
+          <PageList pages={w.pages} types={types} categories={categories} empty={t("widget.noPages")} />
           {more && w.pages.length >= w.count && (
             <NavLink className="widget-more" to={more}>
               {t("widget.seeAll")}
@@ -207,23 +202,6 @@ const WidgetView: React.FC<{ widget: Widget; space: Space; types: PageType[]; ca
       );
     }
   }
-};
-
-const FeaturedCard: React.FC<{ page: PageSummary }> = ({ page }) => {
-  const { go } = useNav();
-  return (
-    <a
-      href="#"
-      className="featured-card"
-      onClick={(e) => {
-        e.preventDefault();
-        go(pageRoute(page.spaceId, page.id));
-      }}
-    >
-      <span className="featured-title">{page.title}</span>
-      {page.lead && <span className="featured-lead">{page.lead}</span>}
-    </a>
-  );
 };
 
 /** The settings of one block while the home page is being arranged. */

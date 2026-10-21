@@ -5,7 +5,7 @@ import { Upload, X } from "lucide-react";
 import { AccessLevel, Category, FieldDef, FieldValue, Page, PageType } from "@commons-root/gen-shared";
 import DocEditor from "../DocEditor";
 import type { EditorTools } from "../ArticleEditor";
-import { categoryOptions, errorText, typeOf, wiki } from "./api";
+import { categoryOptions, errorText, isExtra, typeOf, wiki } from "./api";
 import { InfoboxEditor } from "./Infobox";
 import { NoteText } from "./WikiText";
 import type { Heading } from "./outline";
@@ -55,8 +55,11 @@ export function usePageDraft(page: Page, onSaved: () => void, onError: (message:
     },
     [page.id, page.title, onSaved, onError],
   );
-  const setField = (def: FieldDef, value: string) => save({ fields: [...latest.current.fields.filter((f) => f.fieldId !== def.id), { fieldId: def.id, value }] });
-  return { draft, save, setField };
+  const setField = (def: FieldDef, value: string) =>
+    save({ fields: [...latest.current.fields.filter((f) => f.fieldId !== def.id), { fieldId: def.id, value, name: "", icon: "" }] });
+  // The page's extra infobox rows, in their order.
+  const setExtras = (extras: FieldValue[]) => save({ fields: [...latest.current.fields.filter((f) => !isExtra(f)), ...extras] });
+  return { draft, save, setField, setExtras };
 }
 
 /** The page's title, written where it shows. */
@@ -98,7 +101,7 @@ type Props = {
  * and categories under the text.
  */
 const PageEdit: React.FC<Props> = ({ page, types, categories, edit, focus, onPublish, onError, onEditor }) => {
-  const { draft, save, setField } = edit;
+  const { draft, save, setField, setExtras } = edit;
   const canEdit = page.level >= AccessLevel.EDIT;
   const published = page.publishedAt > 0n;
   const type = typeOf(types, draft.typeId);
@@ -133,6 +136,7 @@ const PageEdit: React.FC<Props> = ({ page, types, categories, edit, focus, onPub
             canEdit={canEdit}
             canChangeType={page.canPublish}
             onValue={setField}
+            onExtras={setExtras}
             onType={(typeId) => save({ typeId })}
             onError={onError}
           />

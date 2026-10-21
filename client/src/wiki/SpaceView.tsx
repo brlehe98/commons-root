@@ -217,13 +217,13 @@ const SpaceView: React.FC<Props> = ({ space, spaces, types, at, search, tools, c
       main = <TagsView space={space} />;
       break;
     case "tag":
-      main = <TagView key={at.tag} space={space} types={types} tag={at.tag} />;
+      main = <TagView key={at.tag} space={space} types={types} categories={categories} tag={at.tag} />;
       break;
     case "drafts":
-      main = <DraftsView space={space} types={types} />;
+      main = <DraftsView space={space} types={types} categories={categories} />;
       break;
     case "recent":
-      main = <RecentView space={space} types={types} />;
+      main = <RecentView space={space} types={types} categories={categories} />;
       break;
     case "all":
       main = <AllPages space={space} types={types} categories={categories} />;
@@ -438,7 +438,7 @@ const CategoryView: React.FC<{
         </section>
       )}
       <h2 className="list-subtitle">{t("category.pages", { count: pages?.length ?? 0 })}</h2>
-      <PageList pages={pages ?? []} types={types} empty={t("category.empty")} />
+      <PageList pages={pages ?? []} types={types} categories={categories} empty={t("category.empty")} />
     </div>
   );
 };
@@ -461,7 +461,7 @@ const TagsView: React.FC<{ space: Space }> = ({ space }) => {
   );
 };
 
-const TagView: React.FC<{ space: Space; types: PageType[]; tag: string }> = ({ space, types, tag }) => {
+const TagView: React.FC<{ space: Space; types: PageType[]; categories: Category[]; tag: string }> = ({ space, types, categories, tag }) => {
   const { value: pages } = useLoaded(
     `tag:${space.id}:${tag}`,
     () => wiki.listPages({ spaceId: space.id, categoryId: "", deep: false, tag, typeId: "", drafts: false, recent: false, limit: 0 }).then((r) => r.pages),
@@ -472,13 +472,13 @@ const TagView: React.FC<{ space: Space; types: PageType[]; tag: string }> = ({ s
       <h1 className="page-title">
         <span className="title-kind">{t("tags.label")}</span> {tag}
       </h1>
-      <PageList pages={pages ?? []} types={types} empty={t("tags.noPages")} />
+      <PageList pages={pages ?? []} types={types} categories={categories} empty={t("tags.noPages")} />
     </div>
   );
 };
 
 /** The pages published last, newest first. */
-const RecentView: React.FC<{ space: Space; types: PageType[] }> = ({ space, types }) => {
+const RecentView: React.FC<{ space: Space; types: PageType[]; categories: Category[] }> = ({ space, types, categories }) => {
   const { value: pages } = useLoaded(
     `recent:${space.id}`,
     () => wiki.listPages({ spaceId: space.id, categoryId: "", deep: false, tag: "", typeId: "", drafts: false, recent: true, limit: 50 }).then((r) => r.pages),
@@ -488,12 +488,12 @@ const RecentView: React.FC<{ space: Space; types: PageType[] }> = ({ space, type
     <div className="recent-view">
       <h1 className="page-title">{t("space.recent")}</h1>
       <p className="hint">{t("recent.hint")}</p>
-      <PageList pages={pages ?? []} types={types} empty={t("recent.empty")} />
+      <PageList pages={pages ?? []} types={types} categories={categories} empty={t("recent.empty")} />
     </div>
   );
 };
 
-const DraftsView: React.FC<{ space: Space; types: PageType[] }> = ({ space, types }) => {
+const DraftsView: React.FC<{ space: Space; types: PageType[]; categories: Category[] }> = ({ space, types, categories }) => {
   const { value: pages } = useLoaded(
     `drafts:${space.id}`,
     () => wiki.listPages({ spaceId: space.id, categoryId: "", deep: false, tag: "", typeId: "", drafts: true, recent: true, limit: 0 }).then((r) => r.pages),
@@ -503,7 +503,7 @@ const DraftsView: React.FC<{ space: Space; types: PageType[] }> = ({ space, type
     <div className="drafts-view">
       <h1 className="page-title">{t("space.drafts")}</h1>
       <p className="hint">{t("drafts.hint")}</p>
-      <PageList pages={pages ?? []} types={types} empty={t("drafts.empty")} drafts />
+      <PageList pages={pages ?? []} types={types} categories={categories} empty={t("drafts.empty")} drafts />
     </div>
   );
 };

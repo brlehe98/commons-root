@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { wikiServiceClient, WikiServiceClientEvent } from "@commons-root/gen-client";
-import { Category, FieldDef, FieldValue, PageType, Space } from "@commons-root/gen-shared";
+import { Category, FieldDef, FieldKind, FieldValue, PageType, Space } from "@commons-root/gen-shared";
 import { recall, remember } from "../snapshots";
 import { locale, t } from "../i18n";
 
@@ -91,6 +91,10 @@ export function categoryOptions(categories: Category[], none = t("page.noCategor
 
 export const typeOf = (types: PageType[], id: string) => types.find((tp) => tp.id === id);
 
+/** The page's own photo, above the type's fields in its infobox. */
+export const PAGE_IMAGE: FieldDef = { id: "image", name: "", icon: "", kind: FieldKind.FIELD_IMAGE, options: [] };
+/** A row the page adds to its infobox (its own name and icon); not page metadata. */
+export const isExtra = (v: FieldValue) => v.fieldId.startsWith("x-");
 export const valueOf = (values: FieldValue[], def: FieldDef) => values.find((v) => v.fieldId === def.id)?.value ?? "";
 
 /** The published text of a page as ProseMirror JSON, put back together when sent in parts. */

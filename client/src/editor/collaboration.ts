@@ -1,7 +1,7 @@
 import { Extension } from "@tiptap/core";
 import { keymap } from "@tiptap/pm/keymap";
 import * as Y from "yjs";
-import { ySyncPlugin, ySyncPluginKey, yCursorPlugin, yUndoPlugin, undo, redo } from "y-prosemirror";
+import { ySyncPlugin, ySyncPluginKey, yUndoPlugin, undo, redo } from "y-prosemirror";
 import type { DocSync } from "../sync";
 
 /**
@@ -37,7 +37,6 @@ export const Collaboration = Extension.create<{ sync: DocSync | null }>({
     const fragment = sync.ydoc.getXmlFragment("body");
     return [
       ySyncPlugin(fragment),
-      yCursorPlugin(sync.awareness),
       yUndoPlugin({ undoManager: undoManagerFor(fragment) }),
       keymap({ "Mod-z": undo, "Mod-y": redo, "Mod-Shift-z": redo }),
     ];

@@ -39,6 +39,7 @@ const Settings: React.FC<Props> = ({ spaces, section = "spaces", onChanged }) =>
   const { go, replace } = useNav();
   const [error, setError] = useState<string | null>(null);
   const space = spaces.find((s) => s.id === section);
+  const typeId = section.startsWith("type:") ? section.slice(5) : null;
   const open = (next: string) => replace({ view: "settings", section: next });
   // A space opens as a step forward: the back button returns to the list.
   const openSpace = (id: string) => go({ view: "settings", section: id });
@@ -60,7 +61,7 @@ const Settings: React.FC<Props> = ({ spaces, section = "spaces", onChanged }) =>
           <button className={section === "spaces" || space ? "settings-nav-item on" : "settings-nav-item"} onClick={() => open("spaces")}>
             <Layers size={15} /> {t("settings.spaces")}
           </button>
-          <button className={section === "types" ? "settings-nav-item on" : "settings-nav-item"} onClick={() => open("types")}>
+          <button className={section === "types" || typeId ? "settings-nav-item on" : "settings-nav-item"} onClick={() => open("types")}>
             <LayoutTemplate size={15} /> {t("settings.types")}
           </button>
         </nav>
@@ -72,8 +73,8 @@ const Settings: React.FC<Props> = ({ spaces, section = "spaces", onChanged }) =>
       )}
       {space ? (
         <SpaceSettings key={space.id} space={space} act={act} onBack={() => open("spaces")} onError={setError} />
-      ) : section === "types" ? (
-        <PageTypes act={act} />
+      ) : section === "types" || typeId ? (
+        <PageTypes act={act} openId={typeId} onOpen={(id) => (id ? go({ view: "settings", section: `type:${id}` }) : open("types"))} />
       ) : (
         <SpacesList spaces={spaces} act={act} onOpen={openSpace} />
       )}
@@ -296,9 +297,13 @@ const AccessEditor: React.FC<{ space: Space; onError: (msg: string) => void }> =
 };
 
 /** Kinds of pages: the fields of their infobox and the text a new page starts from. */
-const PageTypes: React.FC<{ act: (fn: () => Promise<unknown>) => Promise<void> }> = ({ act }) => {
+// A type opens as a step forward, like a space: the back button returns to the list.
+const PageTypes: React.FC<{ act: (fn: () => Promise<unknown>) => Promise<void>; openId: string | null; onOpen: (id: string | null) => void }> = ({
+  act,
+  openId,
+  onOpen,
+}) => {
   const [types, setTypes] = useState<PageType[] | null>(null);
-  const [openId, setOpenId] = useState<string | null>(null);
   const load = () => wiki.listPageTypes().then((r) => setTypes(r.types));
   useEffect(() => {
     load().catch(() => setTypes([]));
@@ -308,7 +313,7 @@ const PageTypes: React.FC<{ act: (fn: () => Promise<unknown>) => Promise<void> }
   const drag = useDragReorder(moveTo);
   if (!types) return <section>{t("app.loading")}</section>;
   const open = types.find((x) => x.id === openId);
-  if (open) return <PageTypeEditor key={open.id} type={open} run={run} onClose={() => setOpenId(null)} />;
+  if (open) return <PageTypeEditor key={open.id} type={open} run={run} onClose={() => onOpen(null)} />;
   return (
     <section>
       <SectionTitle icon={<LayoutTemplate size={16} />}>{t("settings.types")}</SectionTitle>
@@ -326,14 +331,14 @@ const PageTypes: React.FC<{ act: (fn: () => Promise<unknown>) => Promise<void> }
           <button className="icon" disabled={i === types.length - 1} title={t("common.moveDown")} onClick={() => moveTo(i, i + 1)}>
             <ArrowDown size={15} />
           </button>
-          <button onClick={() => setOpenId(tp.id)}>{t("admin.openSettings")}</button>
+          <button onClick={() => onOpen(tp.id)}>{t("admin.openSettings")}</button>
         </div>
       ))}
       <button
         onClick={() =>
           run(async () => {
             const { type } = await wiki.savePageType({ id: "", name: t("settings.newType"), icon: "File", fields: [], position: 0 });
-            if (type) setOpenId(type.id);
+            if (type) onOpen(type.id);
           })
         }
       >
@@ -360,13 +365,16 @@ const PageTypeEditor: React.FC<{ type: PageType; run: (fn: () => Promise<unknown
 
   return (
     <>
+      <button className="link back-link" onClick={onClose}>
+        <ArrowLeft size={15} /> {t("settings.types")}
+      </button>
       <section>
         <SectionTitle icon={<LayoutTemplate size={16} />}>{t("settings.type")}</SectionTitle>
         <div className="ws-row">
           <IconPicker value={draft.icon} color="" onChange={(icon) => change({ ...draft, icon })} />
           <input value={draft.name} maxLength={80} aria-label={t("settings.typeName")} onChange={(e) => change({ ...draft, name: e.target.value })} />
-          <button className="danger" onClick={remove}>
-            <Trash2 size={14} /> {t("settings.deleteType")}
+          <button className="danger type-delete" title={t("settings.deleteType")} onClick={remove}>
+            <Trash2 size={14} /> <span className="btn-label">{t("settings.deleteType")}</span>
           </button>
         </div>
         <h3 className="sub-title">{t("settings.fields")}</h3>
@@ -374,6 +382,7 @@ const PageTypeEditor: React.FC<{ type: PageType; run: (fn: () => Promise<unknown
         {draft.fields.map((f, i) => (
           <div key={f.id || i} data-drag-row {...drag.row(i)} className={`field-row ${drag.row(i).className}`}>
             {drag.grip(i)}
+            <IconPicker value={f.icon} color="" onChange={(icon) => setField(i, { ...f, icon })} />
             <input value={f.name} placeholder={t("settings.fieldName")} maxLength={80} onChange={(e) => setField(i, { ...f, name: e.target.value })} />
             <select value={f.kind} onChange={(e) => setField(i, { ...f, kind: Number(e.target.value) as FieldKind })} aria-label={t("settings.fieldKind")}>
               {KINDS.map((k) => (
@@ -396,11 +405,10 @@ const PageTypeEditor: React.FC<{ type: PageType; run: (fn: () => Promise<unknown
           </div>
         ))}
         <div className="row-actions">
-          <button onClick={() => change({ ...draft, fields: [...draft.fields, { id: "", name: "", kind: FieldKind.FIELD_TEXT, options: [] }] })}>
+          <button onClick={() => change({ ...draft, fields: [...draft.fields, { id: "", name: "", icon: "", kind: FieldKind.FIELD_TEXT, options: [] }] })}>
             <Plus size={15} /> {t("settings.addField")}
           </button>
           <span className="spacer" />
-          <button onClick={onClose}>{t("settings.backToTypes")}</button>
           <button className="primary" disabled={!dirty} onClick={save}>
             {dirty ? t("common.save") : t("common.saved")}
           </button>

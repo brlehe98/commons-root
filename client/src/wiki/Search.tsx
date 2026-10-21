@@ -81,7 +81,7 @@ const Search: React.FC<Props> = ({ query, spaceId = "", spaces, types }) => {
       {results && (
         <>
           <p className="hint search-count">{t("search.count", { count: results.length })}</p>
-          <PageList pages={results} types={types} empty={t("search.none")} spaceNames={spaceId ? undefined : names} />
+          <PageList pages={results} types={types} categories={spaceId ? categories : undefined} empty={t("search.none")} spaceNames={spaceId ? undefined : names} />
         </>
       )}
     </div>

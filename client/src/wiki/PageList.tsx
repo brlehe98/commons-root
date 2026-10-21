@@ -1,7 +1,7 @@
 import React from "react";
-import { PageSummary, PageType } from "@commons-root/gen-shared";
+import { Category, PageSummary, PageType } from "@commons-root/gen-shared";
 import FieldIcon from "../fields/FieldIcon";
-import { pageRoute, useNav } from "./nav";
+import { NavLink, pageRoute } from "./nav";
 import { formatDate, typeOf } from "./api";
 import { t } from "../i18n";
 
@@ -9,9 +9,9 @@ import { t } from "../i18n";
 function Snippet({ text }: { text: string }) {
   const parts = text.split(/(\u0002[^\u0003]*\u0003)/);
   return (
-    <p className="page-item-lead">
+    <span className="page-card-lead">
       {parts.map((p, i) => (p.startsWith("\u0002") ? <mark key={i}>{p.slice(1, -1)}</mark> : <React.Fragment key={i}>{p}</React.Fragment>))}
-    </p>
+    </span>
   );
 }
 
@@ -19,41 +19,38 @@ type Props = {
   pages: PageSummary[];
   types: PageType[];
   empty: string;
+  /** Names each page's category on its card. */
+  categories?: Category[];
   /** Show each page's space (search across spaces). */
   spaceNames?: Map<string, string>;
   /** Drafts list: open on the Edit tab. */
   drafts?: boolean;
 };
 
-const PageList: React.FC<Props> = ({ pages, types, empty, spaceNames, drafts }) => {
-  const { go } = useNav();
+/** Pages as cards: title, lead (or the search match), type, category, date. */
+const PageList: React.FC<Props> = ({ pages, types, empty, categories, spaceNames, drafts }) => {
   if (!pages.length) return <p className="hint list-empty">{empty}</p>;
   return (
-    <ul className="page-list">
+    <ul className="page-cards">
       {pages.map((p) => {
         const type = typeOf(types, p.typeId);
+        const category = categories?.find((c) => c.id === p.categoryId)?.name;
         return (
-          <li key={p.id} className="page-item">
-            <a
-              href="#"
-              className="page-item-title"
-              onClick={(e) => {
-                e.preventDefault();
-                go(pageRoute(p.spaceId, p.id, drafts ? "edit" : undefined));
-              }}
-            >
-              {p.title || t("page.untitled")}
-            </a>
-            <span className="page-item-meta">
-              {type && (
-                <span className="page-item-type">
-                  <FieldIcon name={type.icon} size={13} /> {type.name}
-                </span>
-              )}
-              {spaceNames?.get(p.spaceId) && <span>{spaceNames.get(p.spaceId)}</span>}
-              {p.draftOnly ? <span className="page-item-draft">{t("page.neverPublished")}</span> : p.publishedAt > 0n && <span>{formatDate(p.publishedAt)}</span>}
-            </span>
-            {p.snippet ? <Snippet text={p.snippet} /> : p.lead && <p className="page-item-lead">{p.lead}</p>}
+          <li key={p.id}>
+            <NavLink className="page-card" to={pageRoute(p.spaceId, p.id, drafts ? "edit" : undefined)}>
+              <span className="page-card-title">{p.title || t("page.untitled")}</span>
+              {p.snippet ? <Snippet text={p.snippet} /> : p.lead && <span className="page-card-lead">{p.lead}</span>}
+              <span className="page-card-meta">
+                {type && (
+                  <span>
+                    <FieldIcon name={type.icon} size={13} /> {type.name}
+                  </span>
+                )}
+                {category && <span>{category}</span>}
+                {spaceNames?.get(p.spaceId) && <span>{spaceNames.get(p.spaceId)}</span>}
+                {p.draftOnly ? <span className="page-card-draft">{t("page.neverPublished")}</span> : p.publishedAt > 0n && <span>{formatDate(p.publishedAt)}</span>}
+              </span>
+            </NavLink>
           </li>
         );
       })}

@@ -12,6 +12,7 @@ import {
 import { EventEmitter } from "events";
 import * as Y from "yjs";
 import { all, get, marks, run } from "./db";
+import { cleanIcon } from "./style";
 import { canSeePage, levelIn, pageAccess, PageAccess } from "./access";
 import { getDoc } from "./docStore";
 
@@ -111,7 +112,21 @@ const isUrl = (v: string) => {
   }
 };
 
-/** Keeps the values the page's type has, each in its field's format. */
+const EXTRA_MAX = 20;
+
+/** The photo's address, then its caption on a line of its own; null when the address isn't Root's. */
+function cleanImage(value: string): string | null {
+  const at = value.indexOf("\n");
+  const uri = (at < 0 ? value : value.slice(0, at)).trim();
+  if (!/^root:\/\/[^\s"'<>\\]{1,400}$/.test(uri)) return null;
+  const caption = at < 0 ? "" : value.slice(at + 1).replace(/[\u0000-\u001f\u007f]+/g, " ").trim().slice(0, 300);
+  return caption ? `${uri}\n${caption}` : uri;
+}
+
+/**
+ * Keeps the values the page's type has, each in its field's format, then the
+ * page's own photo and extra infobox rows (plain text, with a name and icon).
+ */
 export function cleanValues(values: FieldValue[], type: PageType | undefined): FieldValue[] {
   if (!type) return [];
   const out: FieldValue[] = [];
@@ -134,16 +149,23 @@ export function cleanValues(values: FieldValue[], type: PageType | undefined): F
         if (!def.options.includes(value)) continue;
         break;
       case FieldKind.FIELD_IMAGE: {
-        // The photo's address, then its caption on a line of its own.
-        const at = value.indexOf("\n");
-        const uri = (at < 0 ? value : value.slice(0, at)).trim();
-        if (!/^root:\/\/[^\s"'<>\\]{1,400}$/.test(uri)) continue;
-        const caption = at < 0 ? "" : value.slice(at + 1).replace(/[\u0000-\u001f\u007f]+/g, " ").trim().slice(0, 300);
-        value = caption ? `${uri}\n${caption}` : uri;
+        const image = cleanImage(value);
+        if (!image) continue;
+        value = image;
         break;
       }
     }
-    out.push({ fieldId: def.id, value });
+    out.push({ fieldId: def.id, value, name: "", icon: "" });
+  }
+  const image = cleanImage(values.find((v) => v.fieldId === "image")?.value ?? "");
+  if (image) out.push({ fieldId: "image", value: image, name: "", icon: "" });
+  const seen = new Set<string>();
+  for (const v of values) {
+    if (seen.size >= EXTRA_MAX || !/^x-[A-Za-z0-9-]{1,40}$/.test(v.fieldId) || seen.has(v.fieldId)) continue;
+    const name = v.name.replace(/[\u0000-\u001f\u007f]+/g, " ").trim().slice(0, 80);
+    if (!name) continue;
+    seen.add(v.fieldId);
+    out.push({ fieldId: v.fieldId, value: v.value.replace(/[\u0000-\u001f\u007f]+/g, " ").trim().slice(0, VALUE_MAX), name, icon: cleanIcon(v.icon) });
   }
   return out;
 }

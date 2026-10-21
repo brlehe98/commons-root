@@ -115,8 +115,6 @@ type Props = {
 
 export type EditorTools = { editor: Editor; editSource: (pos?: number) => void };
 
-type Peer = { id: string; name: string; color: string };
-
 const ArticleEditor: React.FC<Props> = ({
   sync,
   userId,
@@ -154,7 +152,6 @@ const ArticleEditor: React.FC<Props> = ({
     },
     [sync, level],
   );
-  const peers = usePeers(sync);
   const [notice, setNotice] = useState<{ text: string; error: boolean } | null>(null);
   const noticeTimer = useRef<number>();
   const [draft, setDraft] = useState<Draft | null>(null);
@@ -440,13 +437,6 @@ const ArticleEditor: React.FC<Props> = ({
             <span className={`sync-state ${status}`} role="status">
               {status === "synced" ? t("common.saved") : status === "error" ? t("editor.offline") : t("editor.connecting")}
             </span>
-            <div className="peers">
-              {peers.map((p) => (
-                <span key={p.id} className="peer" style={{ background: p.color }} title={p.name}>
-                  {p.name.slice(0, 1).toUpperCase()}
-                </span>
-              ))}
-            </div>
             {!compact && (
               <button className={showHistory ? "icon on" : "icon"} onClick={() => setShowHistory(!showHistory)} title={t("editor.history")}>
                 <History size={ICON} />
@@ -722,11 +712,11 @@ const Toolbar: React.FC<ToolbarProps> = ({ editor, canSuggest, mode, trailing, o
       {/* Formatting on the left (it may wrap); status and article actions stay a block of their own. */}
       <div className="tb-main" ref={main}>
       {mode}
-      <span className="sep tb-m-hide" />
-      <button className="icon tb-m-hide" title={t("editor.undo")} onClick={() => undo(editor.state)}>
+      <span className="sep tb-m-hide tb-undo" />
+      <button className="icon tb-m-hide tb-undo" title={t("editor.undo")} onClick={() => undo(editor.state)}>
         <Undo2 size={ICON} />
       </button>
-      <button className="icon tb-m-hide" title={t("editor.redo")} onClick={() => redo(editor.state)}>
+      <button className="icon tb-m-hide tb-undo" title={t("editor.redo")} onClick={() => redo(editor.state)}>
         <Redo2 size={ICON} />
       </button>
       <span className="sep" />
@@ -1099,23 +1089,5 @@ const TextStats: React.FC<{ words: number; selected: number; score: Readability 
     </ul>
   </div>
 );
-
-function usePeers(sync: DocSync): Peer[] {
-  const [peers, setPeers] = useState<Peer[]>([]);
-  useEffect(() => {
-    const update = () => {
-      const seen = new Map<string, Peer>();
-      sync.awareness.getStates().forEach((state) => {
-        const u = state.user as Peer | undefined;
-        if (u?.id) seen.set(u.id, u);
-      });
-      setPeers(Array.from(seen.values()));
-    };
-    update();
-    sync.awareness.on("change", update);
-    return () => sync.awareness.off("change", update);
-  }, [sync]);
-  return peers;
-}
 
 export default ArticleEditor;

@@ -148,6 +148,8 @@ message FieldDef {
   FieldKind kind = 3;
   // FIELD_CHOICE: the choices.
   repeated string options = 4;
+  // A Lucide icon shown before the name in the infobox.
+  string icon = 5;
 }
 
 // A kind of page (Guide, Tool…): its fields, shown in the infobox, and a
@@ -179,9 +181,14 @@ enum Community {
   COMMUNITY_EDIT = 2;
 }
 
+// A value of one of the type's fields, or of the page itself: its photo
+// (fieldId "image") or an extra row of its infobox (fieldId "x-…", with its
+// own name and icon; extra rows are not page metadata, nothing filters on them).
 message FieldValue {
   string fieldId = 1;
   string value = 2;
+  string name = 3;
+  string icon = 4;
 }
 
 message PageSummary {
