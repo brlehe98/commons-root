@@ -21,10 +21,6 @@ button.bar-button, .space-pick .menu-trigger, .bar-more .menu-trigger {
 button.bar-button:hover:not(:disabled), .space-pick .menu-trigger:hover:not(:disabled), .bar-more .menu-trigger:hover:not(:disabled) { background: var(--hover); border-color: var(--text); }
 button.bar-button.on, button.bar-button.on:hover:not(:disabled) { background: var(--selected); border-color: var(--text); font-weight: 600; }
 button.menu-toggle { padding: 4px 8px; }
-/* Bar buttons without a frame, as in the other apps: the space picker and search keep theirs. */
-button.bar-button, .bar-more .menu-trigger { border-color: transparent; background: none; }
-button.bar-button:hover:not(:disabled), .bar-more .menu-trigger:hover:not(:disabled) { background: var(--hover); border-color: transparent; }
-button.bar-button.on, button.bar-button.on:hover:not(:disabled) { background: var(--selected); border-color: transparent; }
 .space-pick { flex: none; min-width: 0; }
 .space-pick .menu-trigger { font-weight: 600; max-width: 240px; }
 .space-pick.single { display: inline-flex; align-items: center; gap: 6px; padding: 0 6px; font-weight: 600; font-size: 15px; max-width: 240px; }
