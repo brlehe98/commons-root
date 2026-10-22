@@ -16,17 +16,24 @@
 }
 button.bar-button, .space-pick .menu-trigger, .bar-more .menu-trigger {
   flex: none; display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 4px 10px;
-  border: 1px solid var(--border-strong); border-radius: 6px; background: var(--card); color: var(--text); font-size: 14px; white-space: nowrap;
+  border: 1px solid var(--border-strong); border-radius: 6px; background: var(--card); color: var(--text); font-size: 15px; white-space: nowrap;
 }
 button.bar-button:hover:not(:disabled), .space-pick .menu-trigger:hover:not(:disabled), .bar-more .menu-trigger:hover:not(:disabled) { background: var(--hover); border-color: var(--text); }
 button.bar-button.on, button.bar-button.on:hover:not(:disabled) { background: var(--selected); border-color: var(--text); font-weight: 600; }
 button.menu-toggle { padding: 4px 8px; }
+/* Bar buttons without a frame, as in the other apps: the space picker and search keep theirs. */
+button.bar-button, .bar-more .menu-trigger { border-color: transparent; background: none; }
+button.bar-button:hover:not(:disabled), .bar-more .menu-trigger:hover:not(:disabled) { background: var(--hover); border-color: transparent; }
+button.bar-button.on, button.bar-button.on:hover:not(:disabled) { background: var(--selected); border-color: transparent; }
 .space-pick { flex: none; min-width: 0; }
 .space-pick .menu-trigger { font-weight: 600; max-width: 240px; }
-.space-pick.single { display: inline-flex; align-items: center; gap: 6px; padding: 0 6px; font-weight: 600; font-size: 14px; max-width: 240px; }
+.space-pick.single { display: inline-flex; align-items: center; gap: 6px; padding: 0 6px; font-weight: 600; font-size: 15px; max-width: 240px; }
 .space-pick-name { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .top-bar .search-bar { flex: 1 1 auto; }
 .bar-new { margin-left: auto; }
+/* The main action stands out, as in the other apps. */
+button.bar-button.bar-new { background: var(--ink); border-color: var(--ink); color: var(--on-ink); font-weight: 600; }
+button.bar-button.bar-new:hover:not(:disabled) { background: color-mix(in srgb, var(--ink) 86%, var(--bg)); border-color: color-mix(in srgb, var(--ink) 86%, var(--bg)); }
 .bar-tools { display: flex; align-items: center; gap: 6px; flex: none; }
 .bar-more { display: none; flex: none; }
 .bar-count { display: none; min-width: 18px; padding: 0 5px; border-radius: 9px; background: var(--ink); color: var(--on-ink); font-size: 13px; font-weight: 600; line-height: 18px; text-align: center; }
@@ -70,7 +77,7 @@ button.cat-fold:hover:not(:disabled) { background: var(--hover); border: none; }
 
 /* ---------- Search bar with suggestions ---------- */
 .search-bar { position: relative; flex: 1 1 auto; min-width: 0; max-width: 600px; }
-.search-bar form { display: flex; align-items: center; gap: 0; border: 1px solid var(--border-strong); border-radius: 4px; background: var(--card); padding-left: 10px; }
+.search-bar form { display: flex; align-items: center; gap: 0; border: 1px solid var(--border-strong); border-radius: 6px; background: var(--card); padding-left: 10px; }
 .search-bar form:focus-within { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
 .search-bar form > svg { color: var(--muted); flex: none; }
 .search-bar input { flex: 1; min-width: 0; border: none; background: transparent; box-shadow: none; min-height: 34px; padding: 4px 8px; font-size: 15px; }
@@ -528,7 +535,7 @@ a.catlinks-label { color: var(--link); }
   .bar-more { display: block; }
   .filters label { flex-basis: calc(50% - 8px); min-width: 0; max-width: none; }
   .page-cards { grid-template-columns: minmax(0, 1fr); }
-  .search-bar form { border-radius: 4px; }
+  .search-bar form { border-radius: 6px; }
   .search-filters { margin-left: 0; }
   .search-tag { width: 100%; }
   .page-langs-label { display: none; }
