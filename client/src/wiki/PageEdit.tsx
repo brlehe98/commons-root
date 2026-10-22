@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useEditorState } from "@tiptap/react";
 import type { Editor } from "@tiptap/core";
-import { Upload, X } from "lucide-react";
+import { X } from "lucide-react";
 import { AccessLevel, Category, FieldDef, FieldValue, Page, PageType } from "@commons-root/gen-shared";
 import DocEditor from "../DocEditor";
 import type { EditorTools } from "../ArticleEditor";
@@ -90,7 +90,6 @@ type Props = {
   categories: Category[];
   edit: ReturnType<typeof usePageDraft>;
   focus: { index: number; text: string } | null;
-  onPublish: () => void;
   onError: (message: string) => void;
   onEditor: (editor: Editor | null) => void;
 };
@@ -100,10 +99,9 @@ type Props = {
  * the page's own look, the infobox filled in where it shows, the references
  * and categories under the text.
  */
-const PageEdit: React.FC<Props> = ({ page, types, categories, edit, focus, onPublish, onError, onEditor }) => {
+const PageEdit: React.FC<Props> = ({ page, types, categories, edit, focus, onError, onEditor }) => {
   const { draft, save, setField, setExtras } = edit;
   const canEdit = page.level >= AccessLevel.EDIT;
-  const published = page.publishedAt > 0n;
   const type = typeOf(types, draft.typeId);
   const after = (tools: EditorTools) => (
     <>
@@ -120,15 +118,6 @@ const PageEdit: React.FC<Props> = ({ page, types, categories, edit, focus, onPub
   );
   return (
     <div className="page-edit">
-      {/* Publish sits on its own row above the toolbar, easy to find on every screen.
-          A page never published just says "Publish". */}
-      {page.canPublish && (
-        <div className="publish-row">
-          <button className="primary publish-button" onClick={onPublish} title={page.draftChanged || !published ? undefined : t("page.nothingNew")}>
-            <Upload size={15} /> {t(published ? "page.publishChanges" : "page.publish")}
-          </button>
-        </div>
-      )}
       {page.level < AccessLevel.EDIT && <p className="hint edit-hint">{t("page.suggestHint")}</p>}
       <DocEditor
         docId={`page:${page.id}`}

@@ -132,6 +132,10 @@ span.page-tab.on { cursor: default; }
 .page-tabs .menu-trigger { min-height: 0; padding: 6px 8px; border-color: transparent; background: transparent; color: var(--link); display: inline-flex; align-items: center; gap: 4px; }
 .page-tabs .menu-trigger:hover:not(:disabled) { background: var(--hover); border-color: transparent; }
 .tagline { margin: 10px 0 16px; color: var(--muted); font-size: 14px; font-family: var(--font-ui); }
+/* While editing, Publish sits at the end of the "From …" line, just above the toolbar. */
+.tagline-row { display: flex; align-items: center; justify-content: space-between; gap: 8px 16px; flex-wrap: wrap; margin: 10px 0 14px; }
+.tagline-row .tagline { margin: 0; }
+.tagline-row .publish-button { display: inline-flex; align-items: center; gap: 6px; }
 .wiki-col > .banner { margin-bottom: 14px; border-radius: 8px; }
 .empty-page { padding: 24px 0; color: var(--muted); display: flex; flex-direction: column; gap: 12px; align-items: flex-start; }
 
@@ -569,9 +573,6 @@ a.catlinks-label { color: var(--link); }
 td.infobox-add-row { text-align: center !important; border-top: 1px solid var(--border); }
 td.infobox-add-row button.link { display: inline-flex; align-items: center; gap: 4px; font-size: 14px; }
 
-/* Publish has its own row above the toolbar, with its label. */
-.publish-row { display: flex; justify-content: flex-end; margin: 0 0 12px; }
-.publish-row .publish-button { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; }
 
 /* The page's toolbar stays on one line without scrolling: on phones the pen loses its chevron. */
 

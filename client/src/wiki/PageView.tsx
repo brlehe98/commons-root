@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import type { Editor } from "@tiptap/core";
-import { Bell, BellOff, BookOpen, ChevronDown, Flag, FolderTree, Hash, History, Languages, Lightbulb, Link2, Pencil } from "lucide-react";
+import { Bell, BellOff, BookOpen, ChevronDown, Flag, FolderTree, Hash, History, Languages, Lightbulb, Link2, Pencil, Upload } from "lucide-react";
 import { AccessLevel, Category, Community, Page, PageType, ReportKind, Revision, Space } from "@commons-root/gen-shared";
 import Menu, { MenuItem } from "../ui/Menu";
 import { confirmDialog, formDialog } from "../ui/dialog";
@@ -307,7 +307,7 @@ const PageLayout: React.FC<Props & { page: Page; reload: () => void }> = ({ spac
   let body: React.ReactNode;
   if (editing) {
     body = (
-      <PageEdit page={page} types={types} categories={categories} edit={edit} focus={section ?? null} onPublish={publish} onError={setProblem} onEditor={setEditor} />
+      <PageEdit page={page} types={types} categories={categories} edit={edit} focus={section ?? null} onError={setProblem} onEditor={setEditor} />
     );
   } else if (tab === "history") {
     body = (
@@ -527,10 +527,22 @@ const PageLayout: React.FC<Props & { page: Page; reload: () => void }> = ({ spac
             </div>
           </nav>
         </header>
-        <p className="tagline">
-          {tab === "history" ? t("history.title") : t("page.from", { space: space.name })}
-          {tab !== "history" && edit.draft.lang && <> · {langName(edit.draft.lang)}</>}
-        </p>
+        <div className="tagline-row">
+          <p className="tagline">
+            {tab === "history" ? t("history.title") : t("page.from", { space: space.name })}
+            {tab !== "history" && edit.draft.lang && <> · {langName(edit.draft.lang)}</>}
+          </p>
+          {/* A page never published just says "Publish". */}
+          {editing && page.canPublish && (
+            <button
+              className="primary publish-button"
+              onClick={publish}
+              title={page.draftChanged || page.publishedAt === 0n ? undefined : t("page.nothingNew")}
+            >
+              <Upload size={15} /> {t(page.publishedAt > 0n ? "page.publishChanges" : "page.publish")}
+            </button>
+          )}
+        </div>
         {problem && (
           <div className="banner" role="status" onClick={() => setProblem(null)}>
             {problem}
