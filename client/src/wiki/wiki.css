@@ -360,10 +360,6 @@ a.catlinks-label { color: var(--link); }
   border: 1px solid var(--border); border-radius: 6px;
 }
 .layout.wiki .history { position: fixed; inset: var(--top-offset, 0px) 0 0 0; z-index: 40; }
-.layout.wiki .toolbar .tb-side .primary { display: inline-flex !important; align-items: center; gap: 6px; }
-@container editor (max-width: 600px) {
-  .layout.wiki .publish-label { display: none; }
-}
 
 /* ---------- Labelled fields (home blocks, settings) ---------- */
 .detail { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1; font-family: var(--font-ui); }
@@ -573,11 +569,12 @@ a.catlinks-label { color: var(--link); }
 td.infobox-add-row { text-align: center !important; border-top: 1px solid var(--border); }
 td.infobox-add-row button.link { display: inline-flex; align-items: center; gap: 4px; font-size: 14px; }
 
-/* The page's toolbar stays on one line without scrolling: Publish keeps only
-   its icon when room runs short, and on phones the pen loses its chevron. */
-@container editor (max-width: 900px) {
-  .layout.wiki .publish-label { display: none; }
-}
+/* Publish has its own row above the toolbar, with its label. */
+.publish-row { display: flex; justify-content: flex-end; margin: 0 0 12px; }
+.publish-row .publish-button { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; }
+
+/* The page's toolbar stays on one line without scrolling: on phones the pen loses its chevron. */
+
 @container editor (max-width: 720px) {
   .layout.wiki .tb-undo { display: none; }
 }

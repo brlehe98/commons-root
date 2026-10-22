@@ -120,6 +120,15 @@ const PageEdit: React.FC<Props> = ({ page, types, categories, edit, focus, onPub
   );
   return (
     <div className="page-edit">
+      {/* Publish sits on its own row above the toolbar, easy to find on every screen.
+          A page never published just says "Publish". */}
+      {page.canPublish && (
+        <div className="publish-row">
+          <button className="primary publish-button" onClick={onPublish} title={page.draftChanged || !published ? undefined : t("page.nothingNew")}>
+            <Upload size={15} /> {t(published ? "page.publishChanges" : "page.publish")}
+          </button>
+        </div>
+      )}
       {page.level < AccessLevel.EDIT && <p className="hint edit-hint">{t("page.suggestHint")}</p>}
       <DocEditor
         docId={`page:${page.id}`}
@@ -142,13 +151,6 @@ const PageEdit: React.FC<Props> = ({ page, types, categories, edit, focus, onPub
           />
         }
         after={after}
-        actions={
-          page.canPublish ? (
-            <button className="primary publish-button" onClick={onPublish} title={page.draftChanged || !published ? undefined : t("page.nothingNew")}>
-              <Upload size={15} /> <span className="publish-label">{t("page.publishChanges")}</span>
-            </button>
-          ) : undefined
-        }
       />
     </div>
   );
