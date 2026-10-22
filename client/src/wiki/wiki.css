@@ -453,7 +453,7 @@ a.catlinks-label { color: var(--link); }
 .drag-grip.placeholder { width: 15px; display: inline-block; }
 .field-row { display: flex; align-items: center; gap: 6px; margin: 6px 0; flex-wrap: wrap; }
 .field-row > input:first-of-type { flex: 1 1 160px; min-width: 0; }
-.field-row .field-options { flex: 1 1 100%; order: 1; margin-left: 21px; }
+.field-row .choice-list { flex: 1 1 calc(100% - 21px); min-width: 0; order: 1; margin-left: 21px; }
 .row-actions { display: flex; align-items: center; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
 .row-actions .spacer { flex: 1; }
 .row-actions > button { display: inline-flex; align-items: center; gap: 6px; }
@@ -590,7 +590,7 @@ td.infobox-add-row button.link { display: inline-flex; align-items: center; gap:
 /* Phone: a field keeps its icon, name and remove button on one line, its kind under them. */
 @media (max-width: 600px) {
   .field-row > select { order: 1; flex: 1 1 100%; margin-left: 21px; }
-  .field-row .field-options { order: 2; }
+  .field-row .choice-list { order: 2; margin-left: 0; }
   .admin .ws-row:has(.type-delete) { flex-wrap: nowrap; }
   .type-delete .btn-label { display: none; }
 }
@@ -688,3 +688,9 @@ button.user-name:hover .user-label { text-decoration: underline; text-underline-
 .crumbs [aria-current] { color: var(--text); }
 .crumbs .crumb-sep { color: var(--muted); opacity: 0.7; flex: none; }
 .crumbs svg { flex: none; }
+/* The choices of a list field: one row each. */
+.choice-list { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border-left: 2px solid var(--border-strong); }
+.choice-list-label { font-size: 13px; font-weight: 600; color: var(--muted); }
+.choice-row { display: flex; align-items: center; gap: 4px; }
+.choice-row input { flex: 1; min-width: 0; }
+.choice-list button.add-choice { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; }

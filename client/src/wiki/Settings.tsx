@@ -413,6 +413,47 @@ const PageTypes: React.FC<{
   );
 };
 
+/** The choices of a "list of choices" field: one row each, in order. Empty rows are dropped on save. */
+const ChoiceList: React.FC<{ options: string[]; onChange: (options: string[]) => void }> = ({ options, onChange }) => {
+  const set = (i: number, value: string) => onChange(options.map((o, j) => (j === i ? value : o)));
+  const move = (from: number, to: number) => onChange(reorder(options, from, to));
+  return (
+    <div className="choice-list">
+      <span className="choice-list-label">{t("settings.choices")}</span>
+      {options.map((o, i) => (
+        <div key={i} className="choice-row">
+          <input
+            value={o}
+            maxLength={80}
+            aria-label={t("settings.choiceN", { n: i + 1 })}
+            placeholder={t("settings.choiceN", { n: i + 1 })}
+            autoFocus={o === "" && i === options.length - 1}
+            onChange={(e) => set(i, e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                onChange([...options.slice(0, i + 1), "", ...options.slice(i + 1)]);
+              }
+            }}
+          />
+          <button className="icon" disabled={i === 0} title={t("common.moveUp")} onClick={() => move(i, i - 1)}>
+            <ArrowUp size={14} />
+          </button>
+          <button className="icon" disabled={i === options.length - 1} title={t("common.moveDown")} onClick={() => move(i, i + 1)}>
+            <ArrowDown size={14} />
+          </button>
+          <button className="icon" title={t("settings.removeChoice")} onClick={() => onChange(options.filter((_, j) => j !== i))}>
+            <X size={14} />
+          </button>
+        </div>
+      ))}
+      <button className="add-choice" onClick={() => onChange([...options, ""])}>
+        <Plus size={14} /> {t("settings.addChoice")}
+      </button>
+    </div>
+  );
+};
+
 const PageTypeEditor: React.FC<{
   type: PageType;
   run: (fn: () => Promise<unknown>) => Promise<void>;
@@ -427,7 +468,8 @@ const PageTypeEditor: React.FC<{
   const setField = (i: number, f: FieldDef) => change({ ...draft, fields: draft.fields.map((x, j) => (j === i ? f : x)) });
   const moveField = (from: number, to: number) => change({ ...draft, fields: reorder(draft.fields, from, to) });
   const drag = useDragReorder(moveField);
-  const save = () => run(() => wiki.savePageType(draft)).then(() => setDirty(false));
+  const save = () =>
+    run(() => wiki.savePageType({ ...draft, fields: draft.fields.map((f) => ({ ...f, options: f.options.map((o) => o.trim()).filter(Boolean) })) })).then(() => setDirty(false));
   const remove = async () =>
     (await confirmDialog(t("settings.confirmDeleteType", { name: type.name }), {
       ok: t("common.delete"),
@@ -462,22 +504,7 @@ const PageTypeEditor: React.FC<{
                 </option>
               ))}
             </select>
-            {f.kind === FieldKind.FIELD_CHOICE && (
-              <input
-                className="field-options"
-                defaultValue={f.options.join(", ")}
-                placeholder={t("settings.choices")}
-                onBlur={(e) =>
-                  setField(i, {
-                    ...f,
-                    options: e.target.value
-                      .split(",")
-                      .map((s) => s.trim())
-                      .filter(Boolean),
-                  })
-                }
-              />
-            )}
+            {f.kind === FieldKind.FIELD_CHOICE && <ChoiceList options={f.options} onChange={(options) => setField(i, { ...f, options })} />}
             <button
               className="icon"
               title={t("settings.removeField")}
