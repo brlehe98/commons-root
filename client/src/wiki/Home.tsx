@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from "react";
-import { ArrowDown, ArrowUp, Check, Clock, Folder, Link2, Pencil, Plus, Search, Star, Trash2, X } from "lucide-react";
+import { ArrowDown, ArrowUp, Check, ChevronDown, Clock, Folder, Languages, Link2, Pencil, Plus, Search, Star, Trash2, X } from "lucide-react";
 import { AccessLevel, Category, PageSummary, PageType, Space, Widget, WidgetKind } from "@commons-root/gen-shared";
 import DocEditor from "../DocEditor";
 import Menu from "../ui/Menu";
-import { categoryOptions, childrenOf, errorText, useLoaded, wiki } from "./api";
+import { confirmDialog, formDialog } from "../ui/dialog";
+import { categoryOptions, childrenOf, errorText, LANGS, langName, useLoaded, wiki } from "./api";
 import { NavLink, useNav } from "./nav";
 import PageList from "./PageList";
-import { t } from "../i18n";
+import { t, uiLang } from "../i18n";
 
 type Props = { space: Space; types: PageType[]; categories: Category[] };
 
@@ -37,11 +38,43 @@ const blank = (kind: WidgetKind): Widget => ({
 
 /** A space's front page: blocks the editors arrange (text, search, featured pages…). */
 const Home: React.FC<Props> = ({ space, types, categories }) => {
-  const { value, error, reload } = useLoaded(`home:${space.id}`, () => wiki.getHome({ spaceId: space.id }).then((r) => r.widgets), { spaceId: space.id });
+  // The language picked in the menu; until then, the reader's own (or the original).
+  const [chosen, setChosen] = useState<string | null>(null);
+  const want = chosen ?? uiLang();
+  const loaded = useLoaded(`home:${space.id}:${want}`, () => wiki.getHome({ spaceId: space.id, lang: want }), { spaceId: space.id });
+  const { error, reload } = loaded;
+  const value = loaded.value?.widgets;
+  const lang = loaded.value?.lang ?? "";
+  const langs = loaded.value?.langs ?? [];
   const [editing, setEditing] = useState<Widget[] | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const canEdit = space.level >= AccessLevel.EDIT;
   const widgets = editing ?? value ?? [];
+
+  const translate = async () => {
+    const free = LANGS.filter((code) => !langs.includes(code));
+    const answer = await formDialog(
+      t("home.translateTitle"),
+      [{ key: "lang", label: t("page.language"), options: free.map((code) => ({ value: code, label: langName(code) })) }],
+      { ok: t("page.translate") },
+    );
+    if (!answer) return;
+    try {
+      await wiki.translateHome({ spaceId: space.id, lang: answer.lang, remove: false });
+      setChosen(answer.lang);
+    } catch (err) {
+      setProblem(errorText(err));
+    }
+  };
+  const removeTranslation = async () => {
+    if (!(await confirmDialog(t("home.confirmRemoveTranslation", { lang: langName(lang) }), { ok: t("common.delete"), danger: true }))) return;
+    try {
+      await wiki.translateHome({ spaceId: space.id, lang, remove: true });
+      setChosen("");
+    } catch (err) {
+      setProblem(errorText(err));
+    }
+  };
 
   const save = async () => {
     if (!editing) return;
@@ -49,6 +82,7 @@ const Home: React.FC<Props> = ({ space, types, categories }) => {
       await wiki.saveHome({
         spaceId: space.id,
         widgets: editing.map((w) => ({ ...w, pages: [] })),
+        lang,
       });
       setEditing(null);
       reload();
@@ -71,6 +105,33 @@ const Home: React.FC<Props> = ({ space, types, categories }) => {
     <div className={editing ? "home editing" : "home"}>
       <header className="home-head">
         <h1 className="page-title">{space.name}</h1>
+        {!editing && (langs.length > 0 || canEdit) && (
+          <Menu
+            className="page-langs"
+            title={t("page.languages")}
+            align="right"
+            trigger={
+              <>
+                <Languages size={16} />
+                <span className="page-langs-label">
+                  {lang ? langName(lang) : langs.length ? t("page.languagesCount", { count: langs.length + 1 }) : t("page.addLanguages")}
+                </span>
+                <ChevronDown size={14} />
+              </>
+            }
+            items={[
+              ...(langs.length ? [{ key: "original", label: t("home.original"), active: !lang, onSelect: () => setChosen("") }] : []),
+              ...langs.map((code) => ({ key: code, label: langName(code), active: code === lang, onSelect: () => setChosen(code) })),
+              ...(canEdit
+                ? [
+                    ...(langs.length ? ["separator" as const] : []),
+                    ...(langs.length < LANGS.length ? [{ key: "add", label: t("page.translateTitle"), onSelect: translate }] : []),
+                    ...(lang ? [{ key: "remove", label: t("home.removeTranslation"), danger: true, onSelect: removeTranslation }] : []),
+                  ]
+                : []),
+            ]}
+          />
+        )}
         {canEdit &&
           (editing ? (
             <div className="home-actions">

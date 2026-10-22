@@ -40,6 +40,9 @@ let messages: Partial<Messages> = catalogs[current.catalog];
 /** The language in use, as a BCP 47 tag for `Intl` (dates, numbers). */
 export const locale = () => current.tag;
 
+/** The interface language's code ("fr"), to pick a translated text. */
+export const uiLang = () => current.catalog;
+
 /** For tests and the day the language comes from Root. */
 export function setLocale(tag: string) {
   current = pickLocale([tag]);

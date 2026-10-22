@@ -430,13 +430,27 @@ message Widget {
 
 message GetHomeRequest {
   string spaceId = 1;
+  // The language wanted: its translation when there is one, else the original.
+  string lang = 2;
 }
 message GetHomeResponse {
   repeated Widget widgets = 1;
+  // The language served; empty for the original.
+  string lang = 2;
+  // The languages the home page is translated into.
+  repeated string langs = 3;
 }
 message SaveHomeRequest {
   string spaceId = 1;
   repeated Widget widgets = 2;
+  // The translation saved; empty for the original.
+  string lang = 3;
+}
+// Starts a translation as a copy of the original, or removes one.
+message TranslateHomeRequest {
+  string spaceId = 1;
+  string lang = 2;
+  bool remove = 3;
 }
 
 // ---------- Reports and following ----------
@@ -549,6 +563,7 @@ service WikiService {
 
   rpc GetHome(GetHomeRequest) returns (GetHomeResponse);
   rpc SaveHome(SaveHomeRequest) returns (Ack);
+  rpc TranslateHome(TranslateHomeRequest) returns (Ack);
 
   rpc SendReport(SendReportRequest) returns (Ack);
   rpc ListReports(ListReportsRequest) returns (ListReportsResponse);

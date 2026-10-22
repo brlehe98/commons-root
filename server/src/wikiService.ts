@@ -50,6 +50,7 @@ import {
   SaveCategoryRequest,
   SaveCategoryResponse,
   SaveHomeRequest,
+  TranslateHomeRequest,
   SavePageTypeResponse,
   SaveSpaceRequest,
   SaveSpaceResponse,
@@ -93,6 +94,7 @@ import {
   cleanTags,
   cleanValues,
   copyTemplate,
+  copyText,
   findPage,
   findType,
   LANGS,
@@ -205,6 +207,10 @@ const DEFAULT_HOME = (): Widget[] => [
   { id: crypto.randomUUID(), kind: WidgetKind.WIDGET_FEATURED, title: "", pageIds: [], count: 0, categoryId: "", tag: "", links: [], wide: false, pages: [] },
   { id: crypto.randomUUID(), kind: WidgetKind.WIDGET_RECENT, title: "", pageIds: [], count: 8, categoryId: "", tag: "", links: [], wide: false, pages: [] },
 ];
+
+const widgetDoc = (spaceId: string, widgetId: string) => `widget:${spaceId}_${widgetId}`;
+const homeTranslations = (space: SpaceRow) => parseJson<Record<string, Widget[]>>(space.home_i18n, {});
+const allHomeWidgets = (space: SpaceRow) => [...parseJson<Widget[]>(space.home, []), ...Object.values(homeTranslations(space)).flat()];
 
 // Shown until the editors write their own; they edit it from the home page.
 const WELCOME = [
@@ -347,7 +353,7 @@ export class WikiService extends WikiServiceBase {
     if (space.main) throw new Error("The main space cannot be deleted.");
     const count = await get<{ n: number }>("SELECT COUNT(*) AS n FROM pages WHERE space_id = ?", [space.id]);
     if (count?.n) throw new Error("Move or delete the pages in this space first.");
-    for (const w of parseJson<Widget[]>(space.home, [])) if (w.kind === WidgetKind.WIDGET_TEXT) await deleteDoc(`widget:${space.id}_${w.id}`);
+    for (const w of allHomeWidgets(space)) if (w.kind === WidgetKind.WIDGET_TEXT) await deleteDoc(widgetDoc(space.id, w.id));
     await deleteDoc(`dictionary:${space.id}`);
     await run("DELETE FROM space_access WHERE space_id = ?", [space.id]);
     const cats = await all<{ id: string }>("SELECT id FROM categories WHERE space_id = ?", [space.id]);
@@ -742,9 +748,10 @@ export class WikiService extends WikiServiceBase {
     const next = await get<{ id: string }>("SELECT id FROM pages WHERE translation_group = ? ORDER BY created_at LIMIT 1", [row.translation_group]);
     if (next && row.translation_group === row.id) await run("UPDATE pages SET translation_group = ? WHERE translation_group = ?", [next.id, row.id]);
     // Featured on a home page: taken off.
-    for (const s of await all<SpaceRow>("SELECT * FROM spaces WHERE home LIKE ?", [`%${row.id}%`])) {
-      const widgets = parseJson<Widget[]>(s.home, []).map((w) => ({ ...w, pageIds: (w.pageIds ?? []).filter((p) => p !== row.id) }));
-      await run("UPDATE spaces SET home = ? WHERE id = ?", [JSON.stringify(widgets), s.id]);
+    const unfeature = (widgets: Widget[]) => widgets.map((w) => ({ ...w, pageIds: (w.pageIds ?? []).filter((p) => p !== row.id) }));
+    for (const s of await all<SpaceRow>("SELECT * FROM spaces WHERE home LIKE ? OR home_i18n LIKE ?", [`%${row.id}%`, `%${row.id}%`])) {
+      const translations = Object.fromEntries(Object.entries(homeTranslations(s)).map(([lang, widgets]) => [lang, unfeature(widgets)]));
+      await run("UPDATE spaces SET home = ?, home_i18n = ? WHERE id = ?", [JSON.stringify(unfeature(parseJson<Widget[]>(s.home, []))), JSON.stringify(translations), s.id]);
     }
     this.spaceChanged(row.space_id);
     this.broadcastPageChanged({ pageId: row.id, spaceId: row.space_id }, await spaceAudience(row.space_id));
@@ -911,7 +918,9 @@ export class WikiService extends WikiServiceBase {
   async getHome(request: GetHomeRequest, client: Client): Promise<GetHomeResponse> {
     await requireLevel(client.userId, request.spaceId, AccessLevel.READ);
     const space = await findSpace(request.spaceId);
-    const widgets = parseJson<Widget[]>(space.home, []);
+    const translations = homeTranslations(space);
+    const lang = LANGS.has(request.lang) && translations[request.lang] ? request.lang : "";
+    const widgets = lang ? translations[lang] : parseJson<Widget[]>(space.home, []);
     for (const w of widgets) {
       w.pages = [];
       if (w.kind === WidgetKind.WIDGET_FEATURED && w.pageIds?.length) {
@@ -935,7 +944,7 @@ export class WikiService extends WikiServiceBase {
         w.pages = pages;
       }
     }
-    return { widgets };
+    return { widgets, lang, langs: Object.keys(translations).sort() };
   }
 
   async saveHome(request: SaveHomeRequest, client: Client): Promise<Ack> {
@@ -957,11 +966,42 @@ export class WikiService extends WikiServiceBase {
       wide: !!w.wide,
       pages: [],
     }));
+    const translations = homeTranslations(space);
+    if (request.lang && !(LANGS.has(request.lang) && translations[request.lang])) throw new Error("This translation no longer exists.");
+    const before = request.lang ? translations[request.lang] : parseJson<Widget[]>(space.home, []);
     // Text blocks taken off the page take their text with them.
     const kept = new Set(widgets.map((w) => w.id));
-    for (const w of parseJson<Widget[]>(space.home, []))
-      if (w.kind === WidgetKind.WIDGET_TEXT && !kept.has(w.id)) await deleteDoc(`widget:${space.id}_${w.id}`);
-    await run("UPDATE spaces SET home = ? WHERE id = ?", [JSON.stringify(widgets), space.id]);
+    for (const w of before) if (w.kind === WidgetKind.WIDGET_TEXT && !kept.has(w.id)) await deleteDoc(widgetDoc(space.id, w.id));
+    if (request.lang) {
+      translations[request.lang] = widgets;
+      await run("UPDATE spaces SET home_i18n = ? WHERE id = ?", [JSON.stringify(translations), space.id]);
+    } else {
+      await run("UPDATE spaces SET home = ? WHERE id = ?", [JSON.stringify(widgets), space.id]);
+    }
+    this.spaceChanged(space.id);
+    return OK;
+  }
+
+  async translateHome(request: TranslateHomeRequest, client: Client): Promise<Ack> {
+    await requireLevel(client.userId, request.spaceId, AccessLevel.EDIT);
+    if (!LANGS.has(request.lang)) throw new Error("Choose the language of the translation.");
+    const space = await findSpace(request.spaceId);
+    const translations = homeTranslations(space);
+    if (request.remove) {
+      for (const w of translations[request.lang] ?? []) if (w.kind === WidgetKind.WIDGET_TEXT) await deleteDoc(widgetDoc(space.id, w.id));
+      delete translations[request.lang];
+    } else {
+      if (translations[request.lang]) return OK;
+      // A copy of the original to translate, each text block with its own copy of the text.
+      const copy: Widget[] = [];
+      for (const w of parseJson<Widget[]>(space.home, [])) {
+        const id = crypto.randomUUID();
+        if (w.kind === WidgetKind.WIDGET_TEXT) await copyText(widgetDoc(space.id, w.id), widgetDoc(space.id, id));
+        copy.push({ ...w, id, pages: [] });
+      }
+      translations[request.lang] = copy;
+    }
+    await run("UPDATE spaces SET home_i18n = ? WHERE id = ?", [JSON.stringify(translations), space.id]);
     this.spaceChanged(space.id);
     return OK;
   }

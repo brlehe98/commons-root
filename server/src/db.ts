@@ -152,6 +152,7 @@ export async function openDatabase(): Promise<void> {
   // Columns added after the first release; existing rows get the empty default.
   await addColumn("categories", "icon TEXT NOT NULL DEFAULT ''");
   await addColumn("categories", "color TEXT NOT NULL DEFAULT ''");
+  await addColumn("spaces", "home_i18n TEXT NOT NULL DEFAULT '{}'");
   try {
     await exec(
       `CREATE VIRTUAL TABLE IF NOT EXISTS page_fts USING fts5(page_id UNINDEXED, title, body, tags, tokenize="unicode61 remove_diacritics 2")`,

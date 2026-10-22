@@ -261,16 +261,18 @@ export async function toPage(row: PageRow, userId: UserGuid, access: PageAccess)
 
 /** Starts a page's draft from its type's template. */
 export async function copyTemplate(typeId: string, pageId: string) {
-  if (!typeId) return;
-  const template = await getDoc(templateDoc(typeId));
-  const body = template.ydoc.getXmlFragment("body");
-  if (!body.length) return;
-  const draft = await getDoc(pageDoc(pageId));
-  // Only the text: the template's comments stay with the template.
+  if (typeId) await copyText(templateDoc(typeId), pageDoc(pageId));
+}
+
+/** Copies a shared text into an empty one: the text only, comments stay behind. */
+export async function copyText(fromDocId: string, toDocId: string) {
+  const source = await getDoc(fromDocId);
+  if (!source.ydoc.getXmlFragment("body").length) return;
+  const target = await getDoc(toDocId);
   const copy = new Y.Doc();
-  Y.applyUpdate(copy, Y.encodeStateAsUpdate(template.ydoc));
+  Y.applyUpdate(copy, Y.encodeStateAsUpdate(source.ydoc));
   copy.getMap("comments").clear();
-  Y.applyUpdate(draft.ydoc, Y.encodeStateAsUpdate(copy));
+  Y.applyUpdate(target.ydoc, Y.encodeStateAsUpdate(copy));
   copy.destroy();
 }
 

@@ -104,6 +104,8 @@ export type SpaceRow = {
   icon: string;
   color: string;
   home: string;
+  // Translations of the home page: { lang: widgets }.
+  home_i18n: string;
 };
 
 export async function findSpace(id: string): Promise<SpaceRow> {
