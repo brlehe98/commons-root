@@ -260,6 +260,7 @@ export const pl: Messages = {
   // Commons
   "app.reports": "Zgłoszenia",
   "app.reportsCount": { one: "Zgłoszenia ({count})", few: "Zgłoszenia ({count})", many: "Zgłoszenia ({count})", other: "Zgłoszenia ({count})" },
+  "crumbs.label": "Ścieżka",
   "space.home": "Strona główna",
   "space.newPage": "Nowa strona",
   "space.create": "Utwórz",

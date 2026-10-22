@@ -31,6 +31,7 @@ import AllPages from "./AllPages";
 import Search from "./Search";
 import { useBackButton } from "../ui/backButton";
 import CategoryIcon from "./CategoryIcon";
+import Crumbs, { Crumb, categoryCrumbs } from "./Crumbs";
 import StylePicker from "../ui/StylePicker";
 import { t } from "../i18n";
 
@@ -269,6 +270,30 @@ const SpaceView: React.FC<Props> = ({ space, spaces, types, at, search, tools, c
         main = <Home key={space.id} space={space} types={types} categories={categories} />;
     }
 
+  // The way back to the home and the sections; a page draws its own.
+  let crumbs: Crumb[] | null = null;
+  if (!content && !search)
+    switch (at.kind) {
+      case "all":
+        crumbs = [{ label: t("space.allPages") }];
+        break;
+      case "recent":
+        crumbs = [{ label: t("space.recent") }];
+        break;
+      case "drafts":
+        crumbs = [{ label: t("space.drafts") }];
+        break;
+      case "tags":
+        crumbs = [{ label: t("space.tags") }];
+        break;
+      case "tag":
+        crumbs = [{ label: t("space.tags"), at: { kind: "tags" } }, { label: `#${at.tag}` }];
+        break;
+      case "category":
+        crumbs = categoryCrumbs(pathOf(categories, at.categoryId));
+        break;
+    }
+
   return (
     <div
       className={`space${pinned ? "" : " menu-hidden"}${space.color ? " tinted" : ""}`}
@@ -290,6 +315,7 @@ const SpaceView: React.FC<Props> = ({ space, spaces, types, at, search, tools, c
             {problem}
           </div>
         )}
+        {crumbs && <Crumbs space={space} items={crumbs} />}
         {main}
       </main>
     </div>
@@ -383,7 +409,6 @@ const CategoryView: React.FC<{
   const { value: following, reload: reloadFollow } = useLoaded(null, () => wiki.following({ kind: "category", id: categoryId }).then((r) => r.following));
   const canEdit = space.level >= AccessLevel.EDIT;
   if (!category) return <div className="app-message">{t("category.gone")}</div>;
-  const path = pathOf(categories, categoryId);
   const subs = childrenOf(categories, categoryId);
 
   const act = (fn: () => Promise<unknown>) =>
@@ -393,22 +418,6 @@ const CategoryView: React.FC<{
 
   return (
     <div className="category-view">
-      <nav className="crumbs">
-        {path.slice(0, -1).map((c) => (
-          <React.Fragment key={c.id}>
-            <NavLink
-              to={{
-                view: "space",
-                spaceId: space.id,
-                at: { kind: "category", categoryId: c.id },
-              }}
-            >
-              {c.name}
-            </NavLink>{" "}
-            ›{" "}
-          </React.Fragment>
-        ))}
-      </nav>
       <header className="list-head">
         <h1 className="page-title category-title">
           {canEdit ? (

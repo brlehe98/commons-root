@@ -260,6 +260,7 @@ export const de: Messages = {
   // Commons
   "app.reports": "Meldungen",
   "app.reportsCount": { one: "Meldungen ({count})", other: "Meldungen ({count})" },
+  "crumbs.label": "Brotkrumen",
   "space.home": "Startseite",
   "space.newPage": "Neue Seite",
   "space.create": "Anlegen",

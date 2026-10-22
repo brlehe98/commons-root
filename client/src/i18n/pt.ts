@@ -260,6 +260,7 @@ export const pt: Messages = {
   // Commons
   "app.reports": "Sinalizações",
   "app.reportsCount": { one: "Sinalizações ({count})", other: "Sinalizações ({count})" },
+  "crumbs.label": "Trilha de navegação",
   "space.home": "Início",
   "space.newPage": "Nova página",
   "space.create": "Criar",

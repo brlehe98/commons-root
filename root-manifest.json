@@ -1,6 +1,6 @@
 {
   "id": "ADHu6F1aigmtGOTHcGAkpA",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "package": {
     "client": {
       "deploy": "client/dist"
@@ -25,7 +25,7 @@
           {
             "key": "appAdmins",
             "title": "App admins",
-            "description": "Roles and members who create spaces and groups, set who writes in them, and edit page types. Until someone is chosen, everyone is admin.",
+            "description": "Roles and members who create spaces, set who has access to them, and edit page types. Root community admins are always app admins.",
             "required": false,
             "confirmation": "Save",
             "roleOrMember": {

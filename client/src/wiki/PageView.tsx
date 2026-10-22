@@ -16,6 +16,7 @@ import UserName, { withUser } from "../ui/UserName";
 import CategoryIcon from "./CategoryIcon";
 import { locale, t } from "../i18n";
 import { showToast } from "../ui/toast";
+import Crumbs, { categoryCrumbs } from "./Crumbs";
 
 type Tab = "read" | "edit" | "history";
 
@@ -439,6 +440,7 @@ const PageLayout: React.FC<Props & { page: Page; reload: () => void }> = ({ spac
     <article className={`wiki-page${hasContents ? " has-contents" : ""}${hasContents && pinned ? " contents-pinned" : ""}${editing ? " is-editing" : ""}`}>
       {hasContents && <ContentsColumn headings={headings} targets={targets} onHide={() => setPinned(false)} />}
       <div className="wiki-col">
+        <Crumbs space={space} items={[...categoryCrumbs(path), { label: title || t("page.untitled") }]} />
         <header className="wiki-head">
           <div className="title-row">
             {hasContents && <ContentsButton headings={headings} targets={targets} pinned={pinned} onPin={() => setPinned(true)} />}

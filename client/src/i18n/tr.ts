@@ -260,6 +260,7 @@ export const tr: Messages = {
   // Commons
   "app.reports": "Raporlar",
   "app.reportsCount": { one: "Raporlar ({count})", other: "Raporlar ({count})" },
+  "crumbs.label": "Gezinti yolu",
   "space.home": "Ana sayfa",
   "space.newPage": "Yeni sayfa",
   "space.create": "Oluştur",

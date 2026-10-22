@@ -267,6 +267,7 @@ const catalog = {
   // Commons
   "app.reports": "Reports",
   "app.reportsCount": { one: "Reports ({count})", other: "Reports ({count})" },
+  "crumbs.label": "Breadcrumb",
   "space.home": "Home",
   "space.newPage": "New page",
   "space.create": "Create",

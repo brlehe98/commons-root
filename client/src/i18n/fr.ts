@@ -260,6 +260,7 @@ export const fr: Messages = {
   // Commons
   "app.reports": "Signalements",
   "app.reportsCount": { one: "Signalements ({count})", other: "Signalements ({count})" },
+  "crumbs.label": "Fil d'Ariane",
   "space.home": "Accueil",
   "space.newPage": "Nouvelle page",
   "space.create": "Créer",
