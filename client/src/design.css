@@ -205,7 +205,7 @@ input[type="color"]::-moz-color-swatch { border: none; border-radius: 50%; }
 .tabs.topnav { min-height: 48px; padding: 0 12px; gap: 8px; background: var(--bg); border-bottom: 1px solid var(--border); box-shadow: none; backdrop-filter: none; align-items: stretch; }
 .topnav-group { background: none; border: none; border-radius: 0; padding: 0; gap: 2px; align-items: stretch; }
 .topnav-tools { align-items: stretch; gap: 2px; }
-.topnav .tab, .topnav .tab.colored { height: auto; min-height: 47px; padding: 0 12px; border: none; border-radius: 0; background: none; color: var(--muted); font-weight: 500; font-size: 14px; box-shadow: none; }
+.topnav .tab, .topnav .tab.colored { height: auto; min-height: 47px; padding: 0 12px; border: none; border-radius: 0; background: none; color: var(--muted); font-weight: 500; font-size: 14.5px; box-shadow: none; }
 .topnav .tab:hover, .topnav .tab.colored:hover { background: none; color: var(--text); box-shadow: inset 0 -2px 0 var(--border-strong); }
 .topnav .tab.on, .topnav .tab.colored.on, .topnav-tools .tab.on { background: none; color: var(--text); font-weight: 600; box-shadow: inset 0 -2px 0 var(--ink); }
 .topnav .tab.colored.on { box-shadow: inset 0 -2px 0 var(--tab-color); }
@@ -225,7 +225,7 @@ input[type="color"]::-moz-color-swatch { border: none; border-radius: 50%; }
 .card { background: var(--card); border: 1px solid var(--border-card, var(--border)); border-radius: 6px; padding: 10px 12px; box-shadow: var(--shadow-sm); transform: none; transition: border-color 0.12s, box-shadow 0.12s; }
 .card:hover { transform: none; border-color: var(--border-strong); box-shadow: 0 2px 6px rgb(31 29 26 / 0.08); }
 .column .card, .column .card:hover { border-left-width: 1px; }
-.card-title { font-size: 14px; font-weight: 600; line-height: 1.35; margin-bottom: 8px; }
+.card-title { font-size: 14.5px; font-weight: 600; line-height: 1.35; margin-bottom: 8px; }
 .card-meta { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-start; gap: 6px 10px; font-size: 13.5px; color: var(--muted); }
 .card-authors { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .card .card-fields { margin-top: 8px; }
@@ -641,7 +641,7 @@ select option { background: var(--card); color: var(--text); }
 .checklist-name { flex: 1; min-width: 0; font-family: var(--font-title); font-weight: 600; font-size: 15px; border-color: transparent; background: none; color: var(--text); }
 .checklist-name:hover { border-color: var(--border); }
 .checklist-card .fgroup { border-bottom: none; }
-.checklist-list-name { font-family: var(--font-title); font-weight: 600; color: var(--text); font-size: 14px; }
+.checklist-list-name { font-family: var(--font-title); font-weight: 600; color: var(--text); font-size: 14.5px; }
 .checklist-stage-meta { display: flex; align-items: center; gap: 5px; margin: 0 0 4px; font-size: 13.5px; color: var(--muted); }
 .checklist-done { margin-left: auto; padding: 0 6px; border-radius: 4px; font-size: 12.5px; color: var(--ok); background: color-mix(in srgb, var(--ok) 12%, transparent); }
 .sheet-head > .sheet-delete { flex-shrink: 0; align-self: center; }
@@ -682,8 +682,8 @@ select option { background: var(--card); color: var(--text); }
 
 /* Project tools in the rail (checklist, style guide), set apart from the text tabs. */
 .rail-tools { display: flex; flex-direction: column; gap: 4px; margin: 8px 0 4px; padding: 0; border: none; background: none; }
-.rail-tools-label { padding: 0 2px 2px; font-family: var(--font-title); font-size: 12.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
-.rail-tool { display: flex; align-items: center; gap: 8px; min-height: 32px; padding: 4px 8px; border: 1px solid var(--border-strong); border-radius: 6px; background: var(--card); color: var(--text); font-size: 14px; cursor: pointer; }
+.rail-tools-label { padding: 0 2px 2px; font-family: var(--font-title); font-size: 13px; font-weight: 600; color: var(--muted); }
+.rail-tool { display: flex; align-items: center; gap: 8px; min-height: 32px; padding: 4px 8px; border: 1px solid var(--border-strong); border-radius: 6px; background: var(--card); color: var(--text); font-size: 14.5px; cursor: pointer; }
 .rail-tool svg { flex-shrink: 0; color: var(--muted); }
 .rail-tool:hover { border-color: var(--text); }
 .rail-tool.on { background: var(--selected); border-color: var(--text); font-weight: 600; }
@@ -1098,7 +1098,7 @@ button.link.sheet-delete-link:hover:not(:disabled) { color: var(--danger); text-
 .topnav-measure { position: absolute; visibility: hidden; pointer-events: none; display: flex; gap: 2px; white-space: nowrap; left: 0; top: 0; width: max-content; height: 0; overflow: hidden; }
 .topnav-measure > * { flex-shrink: 0; }
 .topnav-more { display: flex; align-items: stretch; }
-.topnav-more > .menu-trigger { display: inline-flex; align-items: center; gap: 4px; min-height: 47px; padding: 0 12px; border: none; border-radius: 0; background: none; color: var(--muted); font-weight: 500; font-size: 14px; box-shadow: none; white-space: nowrap; }
+.topnav-more > .menu-trigger { display: inline-flex; align-items: center; gap: 4px; min-height: 47px; padding: 0 12px; border: none; border-radius: 0; background: none; color: var(--muted); font-weight: 500; font-size: 14.5px; box-shadow: none; white-space: nowrap; }
 .topnav-more > .menu-trigger:hover:not(:disabled) { color: var(--text); background: none; box-shadow: inset 0 -2px 0 var(--border-strong); }
 .topnav-tools-menu.on > .menu-trigger { color: var(--text); box-shadow: inset 0 -2px 0 var(--ink); }
 .topnav-more .menu-pop { z-index: 70; }
