@@ -26,6 +26,9 @@ button.menu-toggle { padding: 4px 8px; }
 .space-pick.single { display: inline-flex; align-items: center; gap: 6px; padding: 0 6px; font-weight: 600; font-size: 15px; max-width: 240px; }
 .space-pick-name { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .top-bar .search-bar { flex: 1 1 auto; }
+/* The search box is exactly as tall as the bar's buttons. */
+.top-bar .search-bar form { box-sizing: border-box; height: 36px; }
+.top-bar .search-bar input, .top-bar button.search-go { min-height: 0; height: 100%; }
 .bar-new { margin-left: auto; }
 /* The main action stands out, as in the other apps. */
 button.bar-button.bar-new { background: var(--ink); border-color: var(--ink); color: var(--on-ink); font-weight: 600; }
@@ -539,7 +542,8 @@ a.catlinks-label { color: var(--link); }
   .top-bar { padding: 8px 10px; }
   button.bar-button, .space-pick .menu-trigger, .bar-more .menu-trigger { min-height: 42px; padding: 4px 11px; font-size: 16px; }
   .top-bar :is(button.bar-button, .menu-trigger) svg { width: 20px; height: 20px; }
-  .search-bar input { min-height: 40px; font-size: 16px; }
+  .top-bar .search-bar form { height: 42px; }
+  .search-bar input { font-size: 16px; }
   .search-bar form > svg { width: 18px; height: 18px; }
   .space-side { font-size: 17px; }
   .side-link { padding: 8px 10px; gap: 10px; }
@@ -627,11 +631,14 @@ td.infobox-add-row button.link { display: inline-flex; align-items: center; gap:
 .space-main .admin button.add-row { display: inline-flex; align-items: center; gap: 6px; margin-top: -2px; align-self: flex-start; }
 .space-main .admin .new-group { margin-top: 12px; padding: 14px 16px; border: 1px dashed var(--border-strong); border-radius: 8px; }
 .space-main .admin .new-group .sub-title { display: flex; align-items: center; gap: 6px; margin: 0; }
-.space-main .admin .access { border-collapse: separate; border-spacing: 0 6px; }
-.space-main .admin .access td { padding: 8px 10px; background: var(--bg); border: 1px solid var(--border-strong); border-left: none; border-right: none; }
-.space-main .admin .access td:first-child { border-left: 1px solid var(--border-strong); border-radius: 8px 0 0 8px; font-weight: 500; }
-.space-main .admin .access td:last-child { border-right: 1px solid var(--border-strong); border-radius: 0 8px 8px 0; text-align: right; }
-.space-main .admin .access tr:last-child td { border-bottom: 1px solid var(--border-strong); }
+/* Roles of a space: one boxed row each, the name on the left, its level on the right; it fits any width. */
+.space-main .admin table.access, .space-main .admin table.access tbody { display: flex; flex-direction: column; gap: 6px; width: 100%; }
+.space-main .admin table.access tr { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; min-width: 0; padding: 6px 8px 6px 12px; background: var(--bg); border: 1px solid var(--border-strong); border-radius: 8px; }
+.space-main .admin table.access td { display: block; padding: 0; border: none; }
+.space-main .admin table.access td:first-child { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+.space-main .admin table.access td:last-child { flex: 0 1 auto; min-width: 0; margin-left: auto; display: flex; align-items: center; justify-content: flex-end; gap: 6px; }
+.space-main .admin table.access select { min-width: 0; max-width: 100%; }
+.space-main .admin table.access .locked { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
 .space-main .admin .row-actions { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
 .space-main .admin .row-actions .spacer { flex: 1; }
 @media (max-width: 600px) {
@@ -680,7 +687,6 @@ button.user-name:hover .user-label { text-decoration: underline; text-underline-
 .who-reads legend { width: 100%; padding: 0 0 6px; font-weight: 600; font-size: 14px; }
 .who-reads label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
 .who-reads svg { color: var(--muted); }
-.space-main .admin table.access td:last-child { display: flex; align-items: center; justify-content: flex-end; gap: 6px; }
 .space-main .admin select.add-role { align-self: flex-start; }
 /* A short message at the bottom that goes away by itself. */
 .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 1000; max-width: calc(100vw - 32px); padding: 10px 16px; border-radius: 8px; background: var(--card); color: var(--text); border: 1px solid var(--border-strong); font-family: var(--font-ui); font-size: 14px; box-shadow: var(--shadow-md, 0 4px 14px rgb(0 0 0 / 0.2)); animation: toast-in 0.2s ease-out; transition: opacity 0.3s; }

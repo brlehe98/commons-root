@@ -351,6 +351,8 @@ input[type="color"]::-moz-color-swatch { border: none; border-radius: 50%; }
 .icon-grid button { min-height: 0; border-radius: 5px; }
 .icon-grid button:hover, .icon-grid button.active { background: var(--selected); }
 .icon-picker-button, .style-picker-button { min-height: 32px; }
+.icon-picker-button svg { width: 16px; height: 16px; flex: none; }
+.icon-picker-button .icon-empty { color: var(--muted); opacity: 0.7; }
 
 /* ---------- Dialogs ---------- */
 .modal-backdrop { background: rgb(20 18 15 / 0.42); }

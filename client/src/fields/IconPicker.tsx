@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
+import { Shapes } from "lucide-react";
 import { searchIcons } from "./iconSearch";
-import FieldIcon from "./FieldIcon";
+import FieldIcon, { isIcon } from "./FieldIcon";
 import { t } from "../i18n";
 
 // Enough to scroll through; a search narrows it.
@@ -17,7 +18,7 @@ export default function IconPicker({
   value: string;
   color: string;
   onChange: (name: string) => void;
-  /** Shown when no icon is chosen; "Icon" by default. */
+  /** Shown when no icon is chosen; a grey shapes icon by default. */
   placeholder?: React.ReactNode;
   disabled?: boolean;
 }) {
@@ -30,7 +31,7 @@ export default function IconPicker({
   return (
     <div className="icon-picker">
       <button type="button" className="icon-picker-button" disabled={disabled} onClick={() => setOpen(!open)} title={disabled ? "" : t("style.chooseIcon")}>
-        {value ? <FieldIcon name={value} color={color} size={16} /> : placeholder ?? <span className="hint">{t("style.icon")}</span>}
+        {isIcon(value) ? <FieldIcon name={value} color={color} size={16} /> : placeholder ?? <Shapes size={16} className="icon-empty" aria-label={t("style.icon")} />}
       </button>
       {open && (
         <div className="icon-picker-pop">
