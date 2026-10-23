@@ -535,6 +535,18 @@ a.catlinks-label { color: var(--link); }
   .search-filters { margin-left: 0; }
   .search-tag { width: 100%; }
   .page-langs-label { display: none; }
+  /* Phones: a taller bar and a larger menu, easier to tap and to read. */
+  .top-bar { padding: 8px 10px; }
+  button.bar-button, .space-pick .menu-trigger, .bar-more .menu-trigger { min-height: 42px; padding: 4px 11px; font-size: 16px; }
+  .top-bar :is(button.bar-button, .menu-trigger) svg { width: 20px; height: 20px; }
+  .search-bar input { min-height: 40px; font-size: 16px; }
+  .search-bar form > svg { width: 18px; height: 18px; }
+  .space-side { font-size: 17px; }
+  .side-link { padding: 8px 10px; gap: 10px; }
+  .side-link svg { width: 18px; height: 18px; }
+  .side-heading { font-size: 16px; }
+  .side-top { font-size: 17px; }
+  .cat-fold { flex-basis: 26px; height: 26px; }
 }
 
 /* ---------- Dialogs with several fields ---------- */
